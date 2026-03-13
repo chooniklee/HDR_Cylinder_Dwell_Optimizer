@@ -415,9 +415,11 @@
             checkHover(mx, my) {
                 const worldX = (mx - this.offset.x) / this.zoom, worldZ = (my - this.offset.y) / this.zoom;
                 let found = null;
-                const points = [...this.optPoints, ...this.surfacePoints, ...this.hardPoints];
+                // hardPoints는 항상 레이블이 켜져 있으므로 툴팁 감지에서 제외합니다.
+                const points = [...this.optPoints, ...this.surfacePoints];
                 for (let pt of points) {
-                    const dist = Math.sqrt((pt.x - worldX)**2 + (pt.z - worldZ)**2);
+                    // 타겟 포인트들이 화면 왼쪽(-x)에 그려지므로 마우스 좌표 검사 시 -pt.x를 사용합니다.
+                    const dist = Math.sqrt((-pt.x - worldX)**2 + (pt.z - worldZ)**2);
                     if (dist < 0.2) { found = pt; break; }
                 }
                 this.hoveredPoint = found;
