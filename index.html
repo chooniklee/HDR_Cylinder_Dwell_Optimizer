@@ -26,13 +26,13 @@
             width: 100%; border: 1px solid transparent; background: transparent;
             font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
             text-align: center; color: #2563eb; outline: none; border-radius: 4px;
-            transition: all 0.2s; padding: 2px 0;
+            transition: all 0.2s; padding: 0px 0;
         }
         .table-time-input:hover { background: #eff6ff; border-color: #bfdbfe; }
         .table-time-input:focus { background: white; border-color: #3b82f6; }
         
         /* Larger, lowercase-friendly labels */
-        .input-label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 2px; color: #64748b; letter-spacing: 0.01em; text-align: center; }
+        .input-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 2px; color: #475569; letter-spacing: 0.01em; text-align: left; padding-left: 4px; }
         
         .btn-optimize { 
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 10px; border-radius: 8px; 
@@ -41,20 +41,10 @@
         }
         .btn-optimize:hover { transform: translateY(-1px); box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3); }
         .btn-optimize:disabled { background: #cbd5e1 !important; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.7; animation: none !important; }
-        
-        @keyframes pulse-red {
-            0%, 100% { background-color: #ef4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); transform: scale(1); }
-            50% { background-color: #f87171; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); transform: scale(1.02); }
-        }
-        .btn-needs-opt {
-            animation: pulse-red 1.5s infinite !important;
-            background: #ef4444 !important;
-            color: white !important;
-        }
 
         .stats-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .stats-table th { background-color: #f8fafc; padding: 8px 4px; font-size: 11px; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; }
-        .stats-table td { padding: 4px 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 600; color: #334155; }
+        .stats-table th { background-color: #f8fafc; padding: 4px 2px; font-size: 11px; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; }
+        .stats-table td { padding: 1px 2px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 600; color: #334155; }
         
         .checkbox-custom { width: 15px; height: 15px; cursor: pointer; accent-color: #2563eb; }
 
@@ -105,7 +95,7 @@
                     </h2>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="col-span-2 premium-input-group">
-                            <span class="input-label text-left pl-1">Cylinder Diameter (cm)</span>
+                            <span class="input-label">Cylinder Diameter (cm)</span>
                             <div class="flex justify-between gap-1.5 mt-1.5">
                                 <button class="diam-btn" onclick="app.setDiameter(2.0, this)">2.0</button>
                                 <button class="diam-btn" onclick="app.setDiameter(2.5, this)">2.5</button>
@@ -114,54 +104,56 @@
                             </div>
                         </div>
                         <div class="premium-input-group">
-                            <span class="input-label text-left pl-1">Tx Length (cm)</span>
-                            <input type="number" id="txLength" value="4.0" step="0.5" class="side-input" onchange="app.onTxLengthChange()">
+                            <span class="input-label">Tx Length (cm)</span>
+                            <input type="number" id="txLength" value="4.0" step="0.5" class="side-input" onchange="app.onTxLengthChange()" onwheel="app.handleGenericWheel(event, this, 'onTxLengthChange')">
                         </div>
                         <div class="premium-input-group">
-                            <span class="input-label text-left pl-1">Step (cm)</span>
-                            <input type="number" id="stepSize" value="0.5" step="0.1" min="0.2" class="side-input" onchange="app.onStepSizeChange()">
+                            <span class="input-label">Step Size (cm)</span>
+                            <input type="number" id="stepSize" value="0.5" step="0.1" min="0.2" class="side-input" onchange="app.onStepSizeChange()" onwheel="app.handleGenericWheel(event, this, 'onStepSizeChange')">
                         </div>
                         <div class="premium-input-group">
-                            <span class="input-label text-left pl-1">Rx Depth (cm)</span>
-                            <select id="rxDepth" class="side-input bg-transparent" onchange="app.onGeometryChange()">
-                                <option value="0.0" selected>Surface</option>
-                                <option value="0.5">0.5 cm</option>
-                            </select>
+                            <span class="input-label">Rx Depth (cm)</span>
+                            <input type="number" id="rxDepth" value="0.0" step="0.1" min="0.0" max="0.5" class="side-input" onchange="app.onGeometryChange()" onwheel="app.handleGenericWheel(event, this, 'onGeometryChange')">
                         </div>
                         <div class="premium-input-group">
-                            <span class="input-label text-left pl-1">Rx Dose (Gy)</span>
-                            <input type="number" id="rxDose" value="6.0" step="0.5" class="side-input text-green-600" oninput="app.onRxDoseChange(this.value)">
-                        </div>
-                        
-                        <!-- Dome Coverage Preference (Slider) -->
-                        <div class="col-span-2 premium-input-group">
-                            <div class="flex justify-between items-center"><span class="input-label mb-0 text-left pl-1">Dome Coverage Preference</span><span id="dome-angle-val" class="text-[10px] font-bold text-blue-600">30°</span></div>
-                            <input type="range" id="domeAngle" min="0" max="90" step="1" value="30" class="range-input mt-2" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleAngleWheel(event, this)">
+                            <span class="input-label">Rx Dose (Gy)</span>
+                            <input type="number" id="rxDose" value="6.0" step="0.5" class="side-input text-green-600" oninput="app.onRxDoseChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onRxDoseChange')">
                         </div>
                         
                         <div class="col-span-2 premium-input-group">
-                            <div class="flex justify-between items-center"><span class="input-label mb-0 text-left pl-1">Smoothing Weight</span><span id="smooth-val" class="text-[10px] font-bold text-blue-600">0.10</span></div>
-                            <input type="range" id="smoothWeight" min="0" max="1.0" step="0.01" value="0.10" class="range-input mt-2" oninput="app.onSmoothChange(this.value)">
+                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dome Coverage Preference</span><span id="dome-angle-val" class="text-[11px] font-bold text-blue-600">30°</span></div>
+                            <input type="range" id="domeAngle" min="0" max="90" step="1" value="30" class="range-input mt-2" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
                         </div>
                         
-                        <!-- Iterations moved here -->
-                        <div class="premium-input-group">
-                            <span class="input-label text-left pl-1">Iterations</span>
-                            <input type="number" id="maxIterInput" value="150000" step="10000" class="side-input text-purple-600" onchange="app.promptOptimization()">
+                        <div class="col-span-2 premium-input-group">
+                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Smoothing Weight</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">0.10</span></div>
+                            <input type="range" id="smoothWeight" min="0" max="1.0" step="0.01" value="0.10" class="range-input mt-2" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
                         </div>
                         
                         <div class="premium-input-group">
-                            <span class="input-label text-left pl-1">Sk Strength (U)</span>
-                            <input type="number" id="skStrength" value="40700" class="side-input" onchange="app.promptOptimization()">
+                            <span class="input-label">Iterations</span>
+                            <input type="number" id="maxIterInput" value="150000" step="10000" class="side-input text-purple-600" onchange="app.promptOptimization()" onwheel="app.handleGenericWheel(event, this, 'promptOptimization')">
+                        </div>
+                        
+                        <div class="premium-input-group">
+                            <span class="input-label">Sk Strength (U)</span>
+                            <input type="number" id="skStrength" value="40700" step="100" class="side-input" onchange="app.promptOptimization()" onwheel="app.handleGenericWheel(event, this, 'promptOptimization')">
                         </div>
                     </div>
                     <button id="btn-optimize" class="btn-optimize mt-2" onclick="app.calculate()">Start Deep Optimization</button>
                 </section>
 
                 <section class="flex flex-col min-h-[250px] pt-2">
-                    <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2 mb-2">
-                        <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div> Dwells
-                    </h2>
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2">
+                            <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div> Dwells
+                        </h2>
+                        <!-- Enhanced Beyond Tx input box -->
+                        <div class="flex items-center gap-2 bg-[#f8fafc] border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
+                            <span class="text-[12px] font-bold text-slate-600">Beyond Tx (cm):</span>
+                            <input type="number" id="dwellBeyond" value="1.0" step="0.1" min="0" class="w-14 bg-white border border-slate-200 rounded px-1 py-0.5 text-[13px] font-bold text-blue-600 text-center outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" onchange="app.onDwellBeyondChange()" onwheel="app.handleGenericWheel(event, this, 'onDwellBeyondChange')">
+                        </div>
+                    </div>
                     <div class="flex-1 premium-card overflow-hidden">
                         <table class="stats-table">
                             <thead class="sticky top-0 z-10 shadow-sm">
@@ -379,6 +371,27 @@
                 this.animate(); 
             }
 
+            // Universal mouse wheel handler for input fields
+            handleGenericWheel(event, inputEl, callbackName) {
+                event.preventDefault();
+                const step = parseFloat(inputEl.getAttribute('step')) || 1;
+                const delta = event.deltaY < 0 ? step : -step;
+                let val = parseFloat(inputEl.value) || 0;
+                val += delta;
+
+                if (inputEl.hasAttribute('min')) val = Math.max(parseFloat(inputEl.getAttribute('min')), val);
+                if (inputEl.hasAttribute('max')) val = Math.min(parseFloat(inputEl.getAttribute('max')), val);
+
+                let decimals = 0;
+                const stepStr = inputEl.getAttribute('step');
+                if (stepStr && stepStr.includes('.')) decimals = stepStr.split('.')[1].length;
+                inputEl.value = val.toFixed(decimals);
+
+                if (callbackName && typeof this[callbackName] === 'function') {
+                    this[callbackName](inputEl.value);
+                }
+            }
+
             centerView() {
                 const p = this.getInputs();
                 this.offset.x = this.canvas.width / 2;
@@ -415,10 +428,8 @@
             checkHover(mx, my) {
                 const worldX = (mx - this.offset.x) / this.zoom, worldZ = (my - this.offset.y) / this.zoom;
                 let found = null;
-                // hardPoints는 항상 레이블이 켜져 있으므로 툴팁 감지에서 제외합니다.
                 const points = [...this.optPoints, ...this.surfacePoints];
                 for (let pt of points) {
-                    // 타겟 포인트들이 화면 왼쪽(-x)에 그려지므로 마우스 좌표 검사 시 -pt.x를 사용합니다.
                     const dist = Math.sqrt((-pt.x - worldX)**2 + (pt.z - worldZ)**2);
                     if (dist < 0.2) { found = pt; break; }
                 }
@@ -445,33 +456,44 @@
                 document.querySelectorAll('.diam-btn').forEach(b => b.classList.remove('active-diam'));
                 btn.classList.add('active-diam');
                 
-                // Immediately auto-start optimization on Cylinder Diameter change (User Request)
                 this.isOptimizing = false;
-                this.generateDwellPositions(true); // Keep stickiness
+                this.generateDwellPositions(true);
                 this.buildGeometry();
                 this.calculate();
             }
 
-            handleAngleWheel(event, inputEl) {
-                event.preventDefault();
-                const delta = event.deltaY < 0 ? 1 : -1;
-                let val = parseInt(inputEl.value) || 0;
-                val = Math.max(0, Math.min(90, val + delta));
-                inputEl.value = val;
-                this.onDomeAngleChange(val);
-            }
-            
             onDomeAngleChange(val) {
                 if (val === undefined) {
                     val = document.getElementById('domeAngle').value;
                 }
                 document.getElementById('dome-angle-val').innerText = val + '°';
-                this.promptOptimization(); 
+                this.isOptimizing = false;
+                this.buildGeometry();
+                this.calculate();
             }
 
             onSmoothChange(val) {
                 document.getElementById('smooth-val').innerText = val;
-                this.promptOptimization();
+                this.isOptimizing = false;
+                this.calculate();
+            }
+            
+            onDwellBeyondChange() {
+                this.isOptimizing = false;
+                this.generateDwellPositions(false); 
+                this.calculate();
+            }
+
+            updateBeyondTxFromDwells() {
+                const txLength = parseFloat(document.getElementById('txLength').value) || 4.0;
+                const activeDwells = this.dwells.filter(d => d.active);
+                let maxZ = 0;
+                if (activeDwells.length > 0) {
+                    maxZ = Math.max(...activeDwells.map(d => d.z));
+                }
+                let beyond = Math.max(0, maxZ - txLength);
+                beyond = Math.round(beyond * 10) / 10;
+                document.getElementById('dwellBeyond').value = beyond.toFixed(1);
             }
 
             updateDoseLabels(dose) {
@@ -498,7 +520,6 @@
                 
                 this.isOptimizing = false;
                 const btn = document.getElementById('btn-optimize');
-                btn.classList.remove('btn-needs-opt');
                 btn.disabled = false;
                 btn.innerText = "Start Deep Optimization";
                 
@@ -515,31 +536,26 @@
             }
 
             getInputs() {
+                let depthVal = parseFloat(document.getElementById('rxDepth').value);
+                let safeDepth = isNaN(depthVal) ? 0.0 : depthVal;
+
                 return {
                     cylDiam: this.currentDiam,
                     txLength: parseFloat(document.getElementById('txLength').value) || 4.0,
                     stepSize: parseFloat(document.getElementById('stepSize').value) || 0.5,
-                    rxDepth: parseFloat(document.getElementById('rxDepth').value),
+                    rxDepth: safeDepth,
                     rxDose: parseFloat(document.getElementById('rxDose').value) || 6.0, 
                     Sk: parseFloat(document.getElementById('skStrength').value) || 40700,
                     domeAngle: parseInt(document.getElementById('domeAngle').value) || 30,
                     maxIterations: parseInt(document.getElementById('maxIterInput').value) || 150000,
-                    smoothWeight: parseFloat(document.getElementById('smoothWeight').value) || 0.10
+                    smoothWeight: parseFloat(document.getElementById('smoothWeight').value) || 0.10,
+                    dwellBeyond: parseFloat(document.getElementById('dwellBeyond').value) || 0
                 };
             }
 
             promptOptimization() {
                 this.isOptimizing = false;
-                const btn = document.getElementById('btn-optimize');
-                btn.classList.add('btn-needs-opt');
-                btn.innerText = "Apply Changes (Re-Opt)";
-                btn.disabled = false;
-                this.buildGeometryAndPrompt();
-            }
-
-            buildGeometryAndPrompt() {
-                this.buildGeometry();
-                this.calculateDosesOnly();
+                this.calculate();
             }
 
             onTxLengthChange() { 
@@ -559,8 +575,10 @@
             }
             
             onGeometryChange() { 
+                this.isOptimizing = false;
                 this.generateDwellPositions(true); 
-                this.promptOptimization(); 
+                this.buildGeometry();
+                this.calculate();
             }
 
             generateDwellPositions(keepOverrides = true) {
@@ -575,7 +593,7 @@
                     const pos = 124.9 - (z - startZ), roundedPos = Math.round(pos * 100) / 100;
                     const zKey = z.toFixed(2);
                     
-                    let shouldBeActive = z <= (p.txLength + 1.0 + 0.01);
+                    let shouldBeActive = z <= (p.txLength + p.dwellBeyond + 0.01);
                     
                     if (keepOverrides && prevStates[zKey] !== undefined) {
                         shouldBeActive = prevStates[zKey];
@@ -594,25 +612,30 @@
             }
 
             toggleDwell(index) { 
+                this.isOptimizing = false;
                 this.dwells[index].active = !this.dwells[index].active; 
-                this.promptOptimization(); 
+                this.updateBeyondTxFromDwells(); // Dynamically update Beyond Tx Input
+                this.buildGeometry();
+                this.calculate();
             }
 
             handleManualTime(index, value) {
+                this.isOptimizing = false; 
                 const time = parseFloat(value);
                 if (!isNaN(time)) { 
                     this.dwells[index].time = parseFloat(time.toFixed(1)); 
-                    this.promptOptimization(); 
+                    this.calculateDosesOnly(); 
                 }
             }
 
             handleWheelTime(index, event, inputEl) {
+                this.isOptimizing = false;
                 event.preventDefault();
                 const delta = event.deltaY < 0 ? 0.1 : -0.1, currentTime = parseFloat(this.dwells[index].time) || 0;
                 const newTime = Math.max(0, currentTime + delta);
                 this.dwells[index].time = parseFloat(newTime.toFixed(1));
                 inputEl.value = this.dwells[index].time.toFixed(1);
-                this.promptOptimization();
+                this.calculateDosesOnly();
             }
 
             updateDwellTable() {
@@ -713,7 +736,6 @@
                 if (this.isOptimizing) return; 
                 
                 const btn = document.getElementById('btn-optimize');
-                btn.classList.remove('btn-needs-opt');
                 btn.disabled = true; btn.innerText = "Optimizing...";
 
                 const p = this.getInputs();
