@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto HDR Cylinder Dwell Time Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap');
+        
+        body { background-color: #f1f5f9; color: #1e293b; font-family: 'Inter', sans-serif; overflow: hidden; }
+        
+        .premium-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        
+        .premium-input-group { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; transition: all 0.2s; }
+        .premium-input-group:focus-within { border-color: #3b82f6; background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        
+        /* Modernized elegant inputs */
+        .side-input { 
+            width: 100%; border: none; background: transparent; 
+            font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; 
+            text-align: center; color: #1e293b; outline: none;
+        }
+
+        .table-time-input {
+            width: 100%; border: 1px solid transparent; background: transparent;
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            text-align: center; color: #2563eb; outline: none; border-radius: 4px;
+            transition: all 0.2s; padding: 2px 0;
+        }
+        .table-time-input:hover { background: #eff6ff; border-color: #bfdbfe; }
+        .table-time-input:focus { background: white; border-color: #3b82f6; }
+        
+        /* Larger, lowercase-friendly labels */
+        .input-label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 2px; color: #64748b; letter-spacing: 0.01em; text-align: center; }
+        
+        .btn-optimize { 
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 10px; border-radius: 8px; 
+            font-weight: 700; font-size: 13px; width: 100%; transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); border: none; cursor: pointer; letter-spacing: 0.02em;
+        }
+        .btn-optimize:hover { transform: translateY(-1px); box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3); }
+        .btn-optimize:disabled { background: #cbd5e1 !important; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.7; animation: none !important; }
+        
+        @keyframes pulse-red {
+            0%, 100% { background-color: #ef4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); transform: scale(1); }
+            50% { background-color: #f87171; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); transform: scale(1.02); }
+        }
+        .btn-needs-opt {
+            animation: pulse-red 1.5s infinite !important;
+            background: #ef4444 !important;
+            color: white !important;
+        }
+
+        .stats-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .stats-table th { background-color: #f8fafc; padding: 8px 4px; font-size: 11px; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; }
+        .stats-table td { padding: 4px 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 600; color: #334155; }
+        
+        .checkbox-custom { width: 15px; height: 15px; cursor: pointer; accent-color: #2563eb; }
+
+        .toggle-btn {
+            background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 10px;
+            font-size: 10px; font-weight: 700; color: #475569; cursor: pointer; transition: all 0.2s;
+        }
+        .toggle-btn.active { background: #3b82f6; color: white; border-color: #2563eb; }
+
+        .diam-btn {
+            flex: 1; padding: 4px 0; background: transparent; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s;
+        }
+        .diam-btn.active-diam { background: #3b82f6; color: white; border-color: #2563eb; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3); }
+
+        #chartContainer { pointer-events: none; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col bg-slate-100 p-3 gap-3">
+
+    <header class="h-14 px-6 border border-slate-200 bg-white flex justify-between items-center shadow-sm z-30 rounded-xl shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div>
+                <h1 class="text-[20px] font-black text-slate-800 leading-none tracking-tight">Varian Universal Stump Cylinder Dwell Optimizer</h1>
+                <p class="text-[11px] text-slate-400 font-bold mt-0.5">Developed by Choonik Lee, PhD | University of Michigan</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="text-right border-l pl-4 border-slate-100">
+                <p id="iter-counter" class="text-[10px] font-bold text-slate-400 tracking-tight">Iteration: 0 / 150000</p>
+                <p id="mse-display" class="text-[12px] font-black text-blue-600">MSE: 0.0000000</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden gap-3">
+        <aside class="w-[320px] border border-slate-200 bg-white flex flex-col z-20 shadow-sm rounded-xl">
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <section class="space-y-3">
+                    <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Inputs
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2 premium-input-group">
+                            <span class="input-label text-left pl-1">Cylinder Diameter (cm)</span>
+                            <div class="flex justify-between gap-1.5 mt-1.5">
+                                <button class="diam-btn" onclick="app.setDiameter(2.0, this)">2.0</button>
+                                <button class="diam-btn" onclick="app.setDiameter(2.5, this)">2.5</button>
+                                <button class="diam-btn active-diam" onclick="app.setDiameter(3.0, this)">3.0</button>
+                                <button class="diam-btn" onclick="app.setDiameter(3.5, this)">3.5</button>
+                            </div>
+                        </div>
+                        <div class="premium-input-group">
+                            <span class="input-label text-left pl-1">Tx Length (cm)</span>
+                            <input type="number" id="txLength" value="4.0" step="0.5" class="side-input" onchange="app.onTxLengthChange()">
+                        </div>
+                        <div class="premium-input-group">
+                            <span class="input-label text-left pl-1">Step (cm)</span>
+                            <input type="number" id="stepSize" value="0.5" step="0.1" min="0.2" class="side-input" onchange="app.onStepSizeChange()">
+                        </div>
+                        <div class="premium-input-group">
+                            <span class="input-label text-left pl-1">Rx Depth (cm)</span>
+                            <select id="rxDepth" class="side-input bg-transparent" onchange="app.onGeometryChange()">
+                                <option value="0.0" selected>Surface</option>
+                                <option value="0.5">0.5 cm</option>
+                            </select>
+                        </div>
+                        <div class="premium-input-group">
+                            <span class="input-label text-left pl-1">Rx Dose (Gy)</span>
+                            <input type="number" id="rxDose" value="6.0" step="0.5" class="side-input text-green-600" oninput="app.onRxDoseChange(this.value)">
+                        </div>
+                        
+                        <!-- Dome Coverage Preference (Slider) -->
+                        <div class="col-span-2 premium-input-group">
+                            <div class="flex justify-between items-center"><span class="input-label mb-0 text-left pl-1">Dome Coverage Preference</span><span id="dome-angle-val" class="text-[10px] font-bold text-blue-600">30°</span></div>
+                            <input type="range" id="domeAngle" min="0" max="90" step="1" value="30" class="range-input mt-2" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleAngleWheel(event, this)">
+                        </div>
+                        
+                        <div class="col-span-2 premium-input-group">
+                            <div class="flex justify-between items-center"><span class="input-label mb-0 text-left pl-1">Smoothing Weight</span><span id="smooth-val" class="text-[10px] font-bold text-blue-600">0.10</span></div>
+                            <input type="range" id="smoothWeight" min="0" max="1.0" step="0.01" value="0.10" class="range-input mt-2" oninput="app.onSmoothChange(this.value)">
+                        </div>
+                        
+                        <!-- Iterations moved here -->
+                        <div class="premium-input-group">
+                            <span class="input-label text-left pl-1">Iterations</span>
+                            <input type="number" id="maxIterInput" value="150000" step="10000" class="side-input text-purple-600" onchange="app.promptOptimization()">
+                        </div>
+                        
+                        <div class="premium-input-group">
+                            <span class="input-label text-left pl-1">Sk Strength (U)</span>
+                            <input type="number" id="skStrength" value="40700" class="side-input" onchange="app.promptOptimization()">
+                        </div>
+                    </div>
+                    <button id="btn-optimize" class="btn-optimize mt-2" onclick="app.calculate()">Start Deep Optimization</button>
+                </section>
+
+                <section class="flex flex-col min-h-[250px] pt-2">
+                    <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2 mb-2">
+                        <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div> Dwells
+                    </h2>
+                    <div class="flex-1 premium-card overflow-hidden">
+                        <table class="stats-table">
+                            <thead class="sticky top-0 z-10 shadow-sm">
+                                <tr><th class="w-10">Use</th><th>Position (cm)</th><th>Time (s)</th></tr>
+                            </thead>
+                            <tbody id="dwellResults"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </aside>
+
+        <main class="flex-1 relative bg-slate-50 overflow-hidden border border-slate-200 rounded-xl shadow-sm">
+            <canvas id="mainCanvas"></canvas>
+
+            <!-- Debug Legend -->
+            <div id="debug-legend" class="absolute top-5 left-5 p-4 bg-white/95 shadow-xl rounded-xl border border-slate-200 transition-all duration-300">
+                <h4 class="text-[10px] font-bold text-slate-500 mb-3 border-b pb-1 border-slate-200">Optimization Targets</h4>
+                <div class="space-y-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-3 h-3 bg-[#22c55e] rounded-full shadow-sm"></div>
+                        <span class="text-[11px] font-semibold text-slate-700">Target Line (100% Rx)</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-3 h-3 bg-[#ef4444] rounded-full shadow-sm"></div>
+                        <span class="text-[11px] font-semibold text-slate-700">Constraint (Max 200%)</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-3 h-3 bg-[#a855f7] rounded-full shadow-sm"></div>
+                        <span class="text-[11px] font-semibold text-slate-700">Hard Anchor (Exact 100%)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Plotting Overlay -->
+            <div id="chartContainer" class="absolute top-5 right-5 w-80 premium-card p-4 bg-white/95 backdrop-blur transition-all duration-300 flex flex-col gap-4 shadow-xl">
+                <div>
+                    <h4 class="text-[10px] font-bold text-slate-500 mb-1 text-center">Dose Profiler (Rx vs Actual)</h4>
+                    <canvas id="debugChart" class="w-full h-24"></canvas>
+                    <div class="flex justify-between text-[8px] font-bold text-slate-400 mt-1">
+                        <span>Dome Top</span>
+                        <span>Tx End</span>
+                    </div>
+                </div>
+                <div class="border-t border-slate-200 pt-3">
+                    <h4 class="text-[10px] font-bold text-slate-500 mb-1 text-center">MSE Convergence History</h4>
+                    <canvas id="mseChart" class="w-full h-20"></canvas>
+                    <div class="flex justify-between text-[8px] font-bold text-slate-400 mt-1">
+                        <span>0</span>
+                        <span id="mse-x-max">150k</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute bottom-6 left-6 flex flex-col gap-3">
+                <div class="p-4 bg-white/95 shadow-xl rounded-xl border border-slate-200 min-w-[200px]">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-3 h-3 bg-red-500 rounded-sm"></div><span class="text-[12px] font-bold">200%</span></div><span id="label-200" class="text-[10px] font-semibold text-slate-500">12.0 Gy</span></div>
+                        <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-3 h-3 bg-orange-500 rounded-sm"></div><span class="text-[12px] font-bold">150%</span></div><span id="label-150" class="text-[10px] font-semibold text-slate-500">9.0 Gy</span></div>
+                        <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-3 h-3 bg-green-500 rounded-sm"></div><span class="text-[12px] font-bold text-green-700">100% (Rx)</span></div><span id="label-100" class="text-[10px] font-semibold text-slate-500">6.0 Gy</span></div>
+                        <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-3 h-3 bg-blue-500 rounded-sm"></div><span class="text-[12px] font-bold">50%</span></div><span id="label-50" class="text-[10px] font-semibold text-slate-500">3.0 Gy</span></div>
+                    </div>
+                </div>
+                <div class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-semibold shadow-lg flex items-center gap-4">
+                    <button id="toggle-debug" class="toggle-btn active" onclick="app.toggleDebug()">Optimization Detail: ON</button>
+                    <span class="opacity-60">WHEEL: Zoom / Value Ctrl</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const TG43 = {
+            gL_distances: [0, 0.2, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+            gL_values: [0.998, 0.998, 0.997, 0.996, 0.998, 1, 1.003, 1.006, 1.006, 1.004, 0.999, 0.993, 0.968, 0.935],
+            r_headers: [0, 0.2, 0.4, 0.6, 0.8, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10],
+            theta_rows: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 165, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180],
+            F_table: [
+			        [0.6948,0.6948,0.6656,0.6364,0.6298,0.6077,0.6153,0.6340,0.6248,0.6290,0.6481,0.6537,0.6602,0.6830,0.7021,0.7160,0.7581,0.7889],
+			        [0.7106,0.7106,0.6769,0.6432,0.6320,0.6090,0.6144,0.6316,0.6257,0.6331,0.6562,0.6668,0.6758,0.6977,0.7161,0.7274,0.7617,0.7858],
+			        [0.7153,0.7153,0.6841,0.6529,0.6404,0.6200,0.6242,0.6376,0.6343,0.6414,0.6609,0.6710,0.6790,0.6970,0.7170,0.7302,0.7640,0.7937],
+			        [0.7084,0.7084,0.6843,0.6602,0.6501,0.6340,0.6372,0.6469,0.6457,0.6528,0.6707,0.6823,0.6906,0.7050,0.7261,0.7386,0.7711,0.7980],
+			        [0.7363,0.7363,0.7010,0.6657,0.6544,0.6453,0.6523,0.6618,0.6627,0.6679,0.6799,0.6896,0.6974,0.7112,0.7358,0.7499,0.7791,0.8048],
+			        [0.7277,0.7277,0.7059,0.6841,0.6731,0.6641,0.6679,0.6736,0.6764,0.6824,0.6934,0.7040,0.7120,0.7238,0.7481,0.7616,0.7881,0.8110],
+			        [0.7217,0.7217,0.7088,0.6959,0.6882,0.6811,0.6833,0.6860,0.6909,0.6971,0.7070,0.7179,0.7251,0.7344,0.7570,0.7700,0.7946,0.8168],
+			        [0.7360,0.7360,0.7204,0.7048,0.6966,0.6924,0.6968,0.7003,0.7067,0.7123,0.7189,0.7289,0.7360,0.7446,0.7686,0.7800,0.8016,0.8231],
+			        [0.7316,0.7316,0.7260,0.7204,0.7154,0.7119,0.7133,0.7128,0.7188,0.7240,0.7310,0.7431,0.7510,0.7581,0.7794,0.7890,0.8099,0.8299],
+			        [0.7436,0.7436,0.7383,0.7330,0.7286,0.7258,0.7277,0.7270,0.7339,0.7384,0.7431,0.7542,0.7620,0.7685,0.7898,0.7992,0.8182,0.8368],
+			        [0.7622,0.7622,0.7526,0.7430,0.7384,0.7378,0.7409,0.7401,0.7478,0.7518,0.7548,0.7650,0.7723,0.7779,0.7990,0.8083,0.8259,0.8437],
+			        [0.8367,0.8367,0.8199,0.8031,0.8006,0.8018,0.8040,0.8019,0.8087,0.8107,0.8131,0.8209,0.8279,0.8293,0.8443,0.8480,0.8627,0.8730],
+			        [0.9619,0.9619,0.8657,0.8551,0.8541,0.8523,0.8531,0.8520,0.8577,0.8583,0.8616,0.8648,0.8701,0.8690,0.8780,0.8800,0.8931,0.9000],
+			        [0.9677,0.9677,0.9229,0.9174,0.9161,0.9118,0.9133,0.9120,0.9177,0.9177,0.9180,0.9211,0.9233,0.9231,0.9272,0.9301,0.9331,0.9389],
+			        [0.9787,0.9787,0.9561,0.9510,0.9522,0.9481,0.9489,0.9456,0.9500,0.9510,0.9501,0.9528,0.9549,0.9542,0.9577,0.9584,0.9593,0.9632],
+			        [0.9870,0.9870,0.9767,0.9727,0.9733,0.9712,0.9724,0.9706,0.9722,0.9730,0.9730,0.9744,0.9749,0.9738,0.9769,0.9760,0.9782,0.9783],
+			        [0.9928,0.9928,0.9870,0.9840,0.9848,0.9848,0.9866,0.9853,0.9870,0.9877,0.9886,0.9886,0.9882,0.9877,0.9893,0.9878,0.9883,0.9883],
+			        [0.9940,0.9940,0.9948,0.9940,0.9941,0.9948,0.9961,0.9934,0.9958,0.9964,0.9963,0.9964,0.9960,0.9961,0.9957,0.9951,0.9948,0.9957],
+			        [0.9982,0.9982,0.9990,0.9989,0.9980,0.9989,0.9997,0.9980,0.9996,1.0003,0.9997,0.9999,0.9998,1.0001,0.9991,0.9993,0.9986,0.9992],
+			        [1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000],
+			        [1.0002,1.0002,0.9993,0.9987,0.9988,0.9990,0.9982,0.9982,0.9983,0.9976,0.9987,0.9986,0.9987,0.9987,0.9996,0.9987,0.9995,0.9989],
+			        [0.9979,0.9979,0.9961,0.9940,0.9946,0.9947,0.9947,0.9934,0.9948,0.9942,0.9953,0.9950,0.9950,0.9954,0.9952,0.9940,0.9946,0.9949],
+			        [0.9983,0.9983,0.9897,0.9850,0.9838,0.9848,0.9862,0.9840,0.9867,0.9869,0.9873,0.9869,0.9877,0.9893,0.9882,0.9870,0.9887,0.9890],
+			        [0.9943,0.9943,0.9759,0.9729,0.9708,0.9717,0.9717,0.9700,0.9720,0.9729,0.9737,0.9736,0.9740,0.9754,0.9758,0.9767,0.9771,0.9790],
+			        [0.9906,0.9906,0.9576,0.9496,0.9471,0.9480,0.9470,0.9471,0.9494,0.9502,0.9521,0.9527,0.9540,0.9532,0.9560,0.9576,0.9590,0.9624],
+			        [0.9733,0.9733,0.9229,0.9141,0.9138,0.9142,0.9140,0.9122,0.9154,0.9161,0.9171,0.9194,0.9214,0.9201,0.9253,0.9268,0.9314,0.9347],
+			        [0.9658,0.9658,0.8726,0.8510,0.8497,0.8471,0.8500,0.8480,0.8528,0.8560,0.8571,0.8632,0.8666,0.8696,0.8757,0.8776,0.8891,0.8954],
+			        [0.8282,0.8282,0.8144,0.8006,0.7983,0.7958,0.7980,0.8007,0.8021,0.8064,0.8090,0.8178,0.8220,0.8294,0.8382,0.8427,0.8601,0.8700],
+			        [0.7892,0.7892,0.7560,0.7228,0.7203,0.7247,0.7252,0.7290,0.7299,0.7342,0.7430,0.7538,0.7613,0.7711,0.7836,0.7949,0.8188,0.8311],
+			        [0.7300,0.7300,0.7150,0.7000,0.6991,0.7062,0.7064,0.7102,0.7119,0.7159,0.7252,0.7354,0.7437,0.7550,0.7684,0.7823,0.8093,0.8221],
+			        [0.7220,0.7220,0.6990,0.6760,0.6790,0.6860,0.6861,0.6890,0.6920,0.6961,0.7050,0.7156,0.7249,0.7377,0.7521,0.7680,0.7978,0.8114],
+			        [0.6272,0.6272,0.6346,0.6420,0.6494,0.6637,0.6632,0.6663,0.6714,0.6748,0.6844,0.6947,0.7054,0.7193,0.7349,0.7524,0.7847,0.7986],
+			        [0.5740,0.5740,0.5960,0.6180,0.6400,0.6426,0.6414,0.6430,0.6504,0.6530,0.6620,0.6722,0.6838,0.6984,0.7146,0.7333,0.7686,0.7838],
+			        [0.6270,0.6270,0.6230,0.6190,0.6150,0.6110,0.6147,0.6156,0.6248,0.6266,0.6360,0.6462,0.6594,0.6740,0.6923,0.7130,0.7521,0.7690],
+			        [0.7100,0.7100,0.6740,0.6380,0.6020,0.5660,0.5680,0.5850,0.5970,0.5977,0.6082,0.6176,0.6323,0.6451,0.6660,0.6882,0.7308,0.7500],
+			        [0.6872,0.6872,0.6584,0.6296,0.6008,0.5720,0.5360,0.5000,0.5648,0.5639,0.5752,0.5841,0.6002,0.6101,0.6344,0.6591,0.7061,0.7294],
+			        [0.4498,0.4498,0.4586,0.4674,0.4762,0.4850,0.4960,0.5070,0.5180,0.5290,0.5214,0.5329,0.5530,0.5602,0.5910,0.6202,0.6720,0.7019],
+			        [0.3294,0.3294,0.3398,0.3502,0.3606,0.3710,0.3840,0.3970,0.4100,0.4230,0.4490,0.4750,0.5010,0.5270,0.5483,0.5721,0.6212,0.6586],
+			        [0.4167,0.4167,0.4211,0.4255,0.4299,0.4343,0.4399,0.4454,0.4509,0.4564,0.4674,0.4785,0.4895,0.5005,0.5226,0.5446,0.5887,0.6328]
+            ],
+            interpolate1D(x, xArr, yArr) {
+                if (x <= xArr[0]) return yArr[0];
+                if (x >= xArr[xArr.length - 1]) return yArr[yArr.length - 1];
+                for (let i = 0; i < xArr.length - 1; i++) {
+                    if (x >= xArr[i] && x <= xArr[i+1]) {
+                        const t = (x - xArr[i]) / (xArr[i+1] - xArr[i]);
+                        return yArr[i] * (1 - t) + yArr[i+1] * t;
+                    }
+                }
+                return 1;
+            },
+            interpolate2D(r, thetaDeg) {
+                const rArr = TG43.r_headers, tArr = TG43.theta_rows, table = TG43.F_table;
+                const rVal = Math.min(Math.max(r, rArr[0]), rArr[rArr.length - 1]);
+                const tVal = Math.min(Math.max(thetaDeg, tArr[0]), tArr[tArr.length - 1]);
+                let ri = 0; while (ri < rArr.length - 2 && rVal > rArr[ri + 1]) ri++;
+                let ti = 0; while (ti < tArr.length - 2 && tVal > tArr[ti + 1]) ti++;
+                const r0 = rArr[ri], r1 = rArr[ri + 1], t0 = tArr[ti], t1 = tArr[ti + 1];
+                const u = (rVal - r0) / (r1 - r0), v = (tVal - t0) / (t1 - t0);
+                const f00 = table[ti][ri], f10 = table[ti][ri + 1], f01 = table[ti + 1][ri], f11 = table[ti + 1][ri + 1];
+                return (1-u)*(1-v)*f00 + u*(1-v)*f10 + (1-u)*v*f01 + u*v*f11;
+            },
+            G(r, thetaRad) {
+                const L = 0.35; if (r < 0.01) return 10000;
+                const x = r * Math.sin(thetaRad), y = r * Math.cos(thetaRad);
+                if (Math.abs(x) < 0.001) { const val = r * r - (L * L / 4); return 1 / Math.max(0.01, Math.abs(val)); }
+                const beta = Math.atan2(y + L / 2, x) - Math.atan2(y - L / 2, x);
+                return Math.abs(beta / (L * x));
+            },
+            calculateDoseRate(dwX, dwZ, dwOrX, dwOrZ, ptX, ptZ, Sk) {
+                const dx = ptX - dwX, dz = ptZ - dwZ;
+                const r = Math.sqrt(dx*dx + dz*dz); if (r < 0.05) return 200000; 
+                const cosTheta = (dx * dwOrX + dz * dwOrZ) / r;
+                const thetaRad = Math.acos(Math.max(-1, Math.min(1, cosTheta)));
+                const thetaDeg = thetaRad * 180 / Math.PI;
+                const g = TG43.interpolate1D(r, this.gL_distances, this.gL_values);
+                const F = TG43.interpolate2D(r, thetaDeg);
+                const Geom = TG43.G(r, thetaRad);
+                return (Sk * 1.1165 * (Geom / 0.989915) * g * F / 100) / 3600; 
+            }
+        };
+
+        class App {
+            constructor() {
+                this.canvas = document.getElementById('mainCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.chartCanvas = document.getElementById('debugChart');
+                this.chartCtx = this.chartCanvas.getContext('2d');
+                this.mseCanvas = document.getElementById('mseChart');
+                this.mseCtx = this.mseCanvas.getContext('2d');
+                
+                this.dwells = [];
+                this.isodoseGrid = [];
+                this.optPoints = [];      
+                this.surfacePoints = [];  
+                this.hardPoints = [];     
+                this.mseHistory = [];
+                
+                // Debug Mode Default ON
+                this.showDebug = true; 
+                
+                this.currentDiam = 3.0;
+                this.lastRxDose = 6.0;
+
+                this.isOptimizing = false;
+                this.currentIter = 0;
+                this.maxIter = 150000;
+                this.targetMSE = 1e-10; 
+                this.M_target = [];
+                this.M_const = [];
+                this.M_hard = [];
+                this.adam_m = [];
+                this.adam_v = [];
+                this.adam_t = 0;
+
+                this.zoom = 60;
+                this.offset = { x: 0, y: 150 };
+                this.isDragging = false;
+                this.lastMouse = { x: 0, y: 0 };
+                this.hoveredPoint = null;
+
+                this.initEventListeners();
+                this.resize();
+                
+                const inputs = this.getInputs();
+                this.lastRxDose = inputs.rxDose;
+                this.updateDoseLabels(this.lastRxDose);
+                
+                this.initDebugUI();
+                
+                // Initialize positions, build geometry, center view, and auto-start
+                this.generateDwellPositions(false); 
+                this.centerView();
+                this.calculate(); 
+                
+                // Safely start render loop
+                this.animate(); 
+            }
+
+            centerView() {
+                const p = this.getInputs();
+                this.offset.x = this.canvas.width / 2;
+                const midZ = p.txLength / 2;
+                this.offset.y = this.canvas.height / 2 - (midZ * this.zoom);
+            }
+
+            initDebugUI() {
+                const chart = document.getElementById('chartContainer');
+                const legend = document.getElementById('debug-legend');
+                const btn = document.getElementById('toggle-debug');
+                if(chart) { chart.style.opacity = "1"; chart.style.transform = "translateY(0)"; }
+                if(legend) { legend.style.opacity = "1"; legend.style.transform = "translateY(0)"; }
+                if(btn) { btn.innerText = "Optimization Detail: ON"; btn.classList.add("active"); }
+            }
+
+            initEventListeners() {
+                window.addEventListener('resize', () => this.resize());
+                this.canvas.addEventListener('wheel', e => { this.zoom *= e.deltaY > 0 ? 0.9 : 1.1; e.preventDefault(); }, { passive: false });
+                this.canvas.addEventListener('mousedown', e => { this.isDragging = true; this.lastMouse = { x: e.clientX, y: e.clientY }; });
+                window.addEventListener('mousemove', e => { 
+                    const rect = this.canvas.getBoundingClientRect();
+                    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+                    if (this.isDragging) {
+                        this.offset.x += (e.clientX - this.lastMouse.x);
+                        this.offset.y += (e.clientY - this.lastMouse.y);
+                        this.lastMouse = { x: e.clientX, y: e.clientY };
+                    }
+                    if (this.showDebug) this.checkHover(mx, my);
+                });
+                window.addEventListener('mouseup', () => this.isDragging = false);
+            }
+
+            checkHover(mx, my) {
+                const worldX = (mx - this.offset.x) / this.zoom, worldZ = (my - this.offset.y) / this.zoom;
+                let found = null;
+                const points = [...this.optPoints, ...this.surfacePoints, ...this.hardPoints];
+                for (let pt of points) {
+                    const dist = Math.sqrt((pt.x - worldX)**2 + (pt.z - worldZ)**2);
+                    if (dist < 0.2) { found = pt; break; }
+                }
+                this.hoveredPoint = found;
+            }
+
+            toggleDebug() {
+                this.showDebug = !this.showDebug;
+                const btn = document.getElementById('toggle-debug'), 
+                      chart = document.getElementById('chartContainer'),
+                      legend = document.getElementById('debug-legend');
+                btn.innerText = `Optimization Detail: ${this.showDebug ? 'ON' : 'OFF'}`;
+                btn.classList.toggle('active', this.showDebug);
+                chart.style.opacity = this.showDebug ? "1" : "0";
+                chart.style.transform = this.showDebug ? "translateY(0)" : "translateY(0.5rem)";
+                if(legend) {
+                    legend.style.opacity = this.showDebug ? "1" : "0";
+                    legend.style.transform = this.showDebug ? "translateY(0)" : "translateY(-0.5rem)";
+                }
+            }
+
+            setDiameter(val, btn) {
+                this.currentDiam = val;
+                document.querySelectorAll('.diam-btn').forEach(b => b.classList.remove('active-diam'));
+                btn.classList.add('active-diam');
+                
+                // Immediately auto-start optimization on Cylinder Diameter change (User Request)
+                this.isOptimizing = false;
+                this.generateDwellPositions(true); // Keep stickiness
+                this.buildGeometry();
+                this.calculate();
+            }
+
+            handleAngleWheel(event, inputEl) {
+                event.preventDefault();
+                const delta = event.deltaY < 0 ? 1 : -1;
+                let val = parseInt(inputEl.value) || 0;
+                val = Math.max(0, Math.min(90, val + delta));
+                inputEl.value = val;
+                this.onDomeAngleChange(val);
+            }
+            
+            onDomeAngleChange(val) {
+                if (val === undefined) {
+                    val = document.getElementById('domeAngle').value;
+                }
+                document.getElementById('dome-angle-val').innerText = val + '°';
+                this.promptOptimization(); 
+            }
+
+            onSmoothChange(val) {
+                document.getElementById('smooth-val').innerText = val;
+                this.promptOptimization();
+            }
+
+            updateDoseLabels(dose) {
+                document.getElementById('label-200').innerText = (dose * 2.0).toFixed(1) + " Gy";
+                document.getElementById('label-150').innerText = (dose * 1.5).toFixed(1) + " Gy";
+                document.getElementById('label-100').innerText = (dose * 1.0).toFixed(1) + " Gy";
+                document.getElementById('label-50').innerText = (dose * 0.5).toFixed(1) + " Gy";
+            }
+
+            onRxDoseChange(val) {
+                const newRx = parseFloat(val);
+                // Prevent NaN, 0, or unchanged values from messing up scaling mid-typing
+                if (isNaN(newRx) || newRx <= 0 || newRx === this.lastRxDose) return;
+                
+                // Scale existing times WITHOUT re-optimizing
+                const ratio = newRx / this.lastRxDose;
+                this.dwells.forEach(dw => {
+                    if (dw.active) dw.time = parseFloat((dw.time * ratio).toFixed(1));
+                });
+                
+                this.lastRxDose = newRx;
+                this.updateDoseLabels(newRx);
+                this.updateDwellTable();
+                
+                this.isOptimizing = false;
+                const btn = document.getElementById('btn-optimize');
+                btn.classList.remove('btn-needs-opt');
+                btn.disabled = false;
+                btn.innerText = "Start Deep Optimization";
+                
+                this.calculateDosesOnly();
+            }
+
+            resize() {
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                this.canvas.width = rect.width || window.innerWidth - 320;
+                this.canvas.height = rect.height || window.innerHeight;
+                this.offset.x = this.canvas.width / 2;
+                this.chartCanvas.width = 280; this.chartCanvas.height = 96;
+                this.mseCanvas.width = 280; this.mseCanvas.height = 80;
+            }
+
+            getInputs() {
+                return {
+                    cylDiam: this.currentDiam,
+                    txLength: parseFloat(document.getElementById('txLength').value) || 4.0,
+                    stepSize: parseFloat(document.getElementById('stepSize').value) || 0.5,
+                    rxDepth: parseFloat(document.getElementById('rxDepth').value),
+                    rxDose: parseFloat(document.getElementById('rxDose').value) || 6.0, 
+                    Sk: parseFloat(document.getElementById('skStrength').value) || 40700,
+                    domeAngle: parseInt(document.getElementById('domeAngle').value) || 30,
+                    maxIterations: parseInt(document.getElementById('maxIterInput').value) || 150000,
+                    smoothWeight: parseFloat(document.getElementById('smoothWeight').value) || 0.10
+                };
+            }
+
+            promptOptimization() {
+                this.isOptimizing = false;
+                const btn = document.getElementById('btn-optimize');
+                btn.classList.add('btn-needs-opt');
+                btn.innerText = "Apply Changes (Re-Opt)";
+                btn.disabled = false;
+                this.buildGeometryAndPrompt();
+            }
+
+            buildGeometryAndPrompt() {
+                this.buildGeometry();
+                this.calculateDosesOnly();
+            }
+
+            onTxLengthChange() { 
+                this.isOptimizing = false;
+                this.generateDwellPositions(false); 
+                this.centerView();
+                this.calculate(); 
+            }
+            
+            onStepSizeChange() { 
+                let el = document.getElementById('stepSize');
+                if (parseFloat(el.value) < 0.2) el.value = 0.2;
+                
+                this.isOptimizing = false;
+                this.generateDwellPositions(false); 
+                this.calculate(); 
+            }
+            
+            onGeometryChange() { 
+                this.generateDwellPositions(true); 
+                this.promptOptimization(); 
+            }
+
+            generateDwellPositions(keepOverrides = true) {
+                const p = this.getInputs(), startZ = 0.65, maxRange = p.txLength + 2.5;
+                const prevStates = {};
+                if (keepOverrides && this.dwells && this.dwells.length > 0) {
+                    this.dwells.forEach(d => prevStates[d.z.toFixed(2)] = d.active);
+                }
+                
+                const newDwells = [];
+                for (let z = startZ; z <= maxRange; z += p.stepSize) {
+                    const pos = 124.9 - (z - startZ), roundedPos = Math.round(pos * 100) / 100;
+                    const zKey = z.toFixed(2);
+                    
+                    let shouldBeActive = z <= (p.txLength + 1.0 + 0.01);
+                    
+                    if (keepOverrides && prevStates[zKey] !== undefined) {
+                        shouldBeActive = prevStates[zKey];
+                    }
+                    
+                    let t = 0;
+                    if (keepOverrides && this.dwells) {
+                        const old = this.dwells.find(d => d.z.toFixed(2) === zKey);
+                        if (old) t = old.time;
+                    }
+                    
+                    newDwells.push({ pos: roundedPos, z: z, time: t, active: shouldBeActive, orX: 0, orZ: -1 });
+                }
+                this.dwells = newDwells;
+                this.updateDwellTable();
+            }
+
+            toggleDwell(index) { 
+                this.dwells[index].active = !this.dwells[index].active; 
+                this.promptOptimization(); 
+            }
+
+            handleManualTime(index, value) {
+                const time = parseFloat(value);
+                if (!isNaN(time)) { 
+                    this.dwells[index].time = parseFloat(time.toFixed(1)); 
+                    this.promptOptimization(); 
+                }
+            }
+
+            handleWheelTime(index, event, inputEl) {
+                event.preventDefault();
+                const delta = event.deltaY < 0 ? 0.1 : -0.1, currentTime = parseFloat(this.dwells[index].time) || 0;
+                const newTime = Math.max(0, currentTime + delta);
+                this.dwells[index].time = parseFloat(newTime.toFixed(1));
+                inputEl.value = this.dwells[index].time.toFixed(1);
+                this.promptOptimization();
+            }
+
+            updateDwellTable() {
+                const tbody = document.getElementById('dwellResults');
+                tbody.innerHTML = this.dwells.map((dw, i) => `
+                    <tr class="${dw.active ? 'bg-blue-50/20' : 'opacity-40'}">
+                        <td><input type="checkbox" class="checkbox-custom" ${dw.active ? 'checked' : ''} onchange="app.toggleDwell(${i})"></td>
+                        <td class="font-semibold text-slate-700">${dw.pos.toFixed(1)}</td>
+                        <td>
+                            <input type="number" step="0.1" value="${dw.time.toFixed(1)}" class="table-time-input"
+                                oninput="app.handleManualTime(${i}, this.value)" onwheel="app.handleWheelTime(${i}, event, this)">
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            getRxX(z, radius, rxDepth) {
+                const rxRad = radius + rxDepth;
+                if (z >= radius) return rxRad; 
+                const val = rxRad*rxRad - Math.pow(z - radius, 2); 
+                return val > 0 ? Math.sqrt(val) : 0;
+            }
+
+            buildGeometry() {
+                const p = this.getInputs(), radius = p.cylDiam / 2, rxRadius = radius + p.rxDepth;
+                const activeDwells = this.dwells.filter(d => d.active);
+                
+                const optPoints = [], surfacePoints = [];
+                
+                const zRx = p.txLength / 2.0;
+                const zInf = p.txLength;
+                
+                this.hardPoints = [
+                    { x: this.getRxX(zRx, radius, p.rxDepth), z: zRx, label: 'Rx Point (Mid)' },
+                    { x: this.getRxX(zInf, radius, p.rxDepth), z: zInf, label: 'Inf Point (End)' }
+                ];
+                
+                const angleThresholdRad = (p.domeAngle * Math.PI) / 180;
+                const angleSteps = Math.max(10, p.domeAngle); 
+                
+                if (angleSteps > 0) {
+                    for (let i = angleSteps; i >= 0; i--) {
+                        const angle = angleThresholdRad * (i / angleSteps); 
+                        optPoints.push({ x: rxRadius * Math.cos(angle), z: radius - rxRadius * Math.sin(angle), label: '100%' });
+                    }
+                } else {
+                    optPoints.push({ x: rxRadius, z: radius, label: '100%' });
+                }
+
+                for (let z = radius + 0.05; z <= p.txLength; z += 0.1) {
+                    optPoints.push({ x: rxRadius, z: z, label: '100%' });
+                }
+
+                for (let i = 18; i >= 0; i--) {
+                    const angle = (Math.PI / 2) * (i / 18);
+                    surfacePoints.push({ x: radius * Math.sin(angle), z: radius - radius * Math.cos(angle), label: '200%' });
+                }
+
+                this.optPoints = optPoints;
+                this.surfacePoints = surfacePoints;
+
+                if (activeDwells.length > 0) {
+                    this.M_target = optPoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
+                    this.M_const = surfacePoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
+                    this.M_hard = this.hardPoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
+                    this.adam_m = new Array(activeDwells.length).fill(0);
+                    this.adam_v = new Array(activeDwells.length).fill(0);
+                    this.adam_t = 0;
+                }
+            }
+
+            calculateDosesOnly() {
+                const p = this.getInputs(), activeDwells = this.dwells.filter(d => d.active);
+                if (activeDwells.length === 0) return;
+                
+                if(this.optPoints) {
+                    this.optPoints.forEach(pt => {
+                        let d = 0; activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk));
+                        pt.currentDose = d;
+                    });
+                }
+                if(this.surfacePoints) {
+                    this.surfacePoints.forEach(pt => {
+                        let d = 0; activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk));
+                        pt.currentDose = d;
+                    });
+                }
+                if(this.hardPoints) {
+                    this.hardPoints.forEach(pt => {
+                        let d = 0; activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk));
+                        pt.currentDose = d;
+                    });
+                }
+                this.computeIsodose();
+            }
+
+            calculate() {
+                if (this.isOptimizing) return; 
+                
+                const btn = document.getElementById('btn-optimize');
+                btn.classList.remove('btn-needs-opt');
+                btn.disabled = true; btn.innerText = "Optimizing...";
+
+                const p = this.getInputs();
+                this.maxIter = p.maxIterations;
+                document.getElementById('mse-x-max').innerText = this.maxIter >= 1000 ? (this.maxIter/1000) + 'k' : this.maxIter;
+
+                const activeDwells = this.dwells.filter(d => d.active);
+                if (activeDwells.length === 0) { 
+                    btn.disabled = false; btn.innerText = "Start Deep Optimization";
+                    return; 
+                }
+
+                activeDwells.forEach(d => { if(d.time === 0) d.time = 10.0; });
+                this.mseHistory = [];
+                
+                this.buildGeometry();
+
+                this.isOptimizing = true;
+                this.currentIter = 0;
+                
+                requestAnimationFrame(() => this.runOptimizationLoop());
+            }
+
+            runOptimizationLoop() {
+                if (!this.isOptimizing) return;
+                
+                const p = this.getInputs();
+                const activeDwells = this.dwells.filter(d => d.active);
+                const limitDose = p.rxDose * 2.0, targetDose = p.rxDose;
+                const lr = 0.1, beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+                
+                const effectiveSmooth = p.smoothWeight * 0.02; 
+
+                for (let step = 0; step < 1500; step++) {
+                    this.currentIter++;
+                    this.adam_t++;
+                    const decay = Math.max(0, 1 - (this.currentIter / this.maxIter));
+                    let currentMSE = 0;
+
+                    let targetDoses = new Float64Array(this.optPoints.length);
+                    for (let i = 0; i < this.optPoints.length; i++) {
+                        let d = 0; for(let j=0; j<activeDwells.length; j++) d += activeDwells[j].time * this.M_target[i][j];
+                        targetDoses[i] = d; this.optPoints[i].currentDose = d;
+                        currentMSE += Math.pow(d/targetDose - 1, 2);
+                    }
+                    currentMSE /= this.optPoints.length;
+
+                    let constDoses = new Float64Array(this.surfacePoints.length);
+                    for (let k = 0; k < this.surfacePoints.length; k++) {
+                        let d = 0; for(let j=0; j<activeDwells.length; j++) d += activeDwells[j].time * this.M_const[k][j];
+                        constDoses[k] = d; this.surfacePoints[k].currentDose = d;
+                    }
+
+                    let hardDoses = new Float64Array(this.hardPoints.length);
+                    for (let h = 0; h < this.hardPoints.length; h++) {
+                        let d = 0; for(let j=0; j<activeDwells.length; j++) d += activeDwells[j].time * this.M_hard[h][j];
+                        hardDoses[h] = d; this.hardPoints[h].currentDose = d;
+                    }
+
+                    this.lastMSE = currentMSE;
+
+                    for (let j = 0; j < activeDwells.length; j++) {
+                        let grad = 0;
+                        for (let i = 0; i < this.optPoints.length; i++) {
+                            grad += 2 * (targetDoses[i] / targetDose - 1) * (this.M_target[i][j] / targetDose) / this.optPoints.length;
+                        }
+                        
+                        for (let k = 0; k < this.surfacePoints.length; k++) {
+                            let over = constDoses[k] - limitDose;
+                            if (over > 0) grad += 100.0 * 2 * (over / limitDose) * (this.M_const[k][j] / limitDose) / this.surfacePoints.length;
+                        }
+
+                        for (let h = 0; h < this.hardPoints.length; h++) {
+                            grad += 200.0 * 2 * (hardDoses[h] / targetDose - 1) * (this.M_hard[h][j] / targetDose) / this.hardPoints.length;
+                        }
+                        let hardDiff = (hardDoses[0] - hardDoses[1]) / targetDose;
+                        grad += 200.0 * 2 * hardDiff * ((this.M_hard[0][j] - this.M_hard[1][j]) / targetDose);
+
+                        if (this.currentIter < this.maxIter * 0.3) grad += (Math.random() - 0.5) * 0.05 * decay;
+
+                        this.adam_m[j] = beta1 * this.adam_m[j] + (1 - beta1) * grad;
+                        this.adam_v[j] = beta2 * this.adam_v[j] + (1 - beta2) * (grad * grad);
+                        let m_hat = this.adam_m[j] / (1 - Math.pow(beta1, this.adam_t));
+                        let v_hat = this.adam_v[j] / (1 - Math.pow(beta2, this.adam_t));
+                        
+                        activeDwells[j].time -= lr * m_hat / (Math.sqrt(v_hat) + eps);
+                        if (activeDwells[j].time < 0) activeDwells[j].time = 0;
+                    }
+
+                    if (activeDwells.length > 2 && effectiveSmooth > 0) {
+                        const temp = activeDwells.map(d => d.time);
+                        for(let j = 1; j < activeDwells.length - 1; j++) {
+                            activeDwells[j].time = activeDwells[j].time * (1 - effectiveSmooth) + ((temp[j-1] + temp[j+1])/2) * effectiveSmooth;
+                        }
+                    }
+
+                    if (currentMSE < this.targetMSE) break;
+                }
+
+                this.mseHistory.push(this.lastMSE);
+
+                document.getElementById('iter-counter').innerText = `Iteration: ${this.currentIter} / ${this.maxIter}`;
+                document.getElementById('mse-display').innerText = `MSE: ${this.lastMSE.toFixed(7)}`;
+                
+                this.dwells.forEach(d => { d.time = d.active ? parseFloat(d.time.toFixed(1)) : 0; });
+                this.updateDwellTable();
+                this.computeIsodose();
+
+                if (this.currentIter >= this.maxIter || this.lastMSE < this.targetMSE) {
+                    let finalRxDose = 0;
+                    activeDwells.forEach(dw => {
+                        finalRxDose += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, this.hardPoints[0].x, this.hardPoints[0].z, p.Sk);
+                    });
+                    
+                    const normFactor = targetDose / finalRxDose;
+                    activeDwells.forEach(dw => {
+                        dw.time = Math.max(0, parseFloat((dw.time * normFactor).toFixed(1)));
+                    });
+
+                    this.isOptimizing = false;
+                    const btn = document.getElementById('btn-optimize');
+                    btn.disabled = false; btn.innerText = "Start Deep Optimization";
+                    
+                    this.updateDwellTable();
+                    this.calculateDosesOnly();
+                } else {
+                    requestAnimationFrame(() => this.runOptimizationLoop());
+                }
+            }
+
+            computeIsodose() {
+                const p = this.getInputs(), res = 0.15, grid = [];
+                
+                const halfStepsX = Math.ceil((p.cylDiam + 3.5) / res);
+                const startX = -halfStepsX * res;
+                const numCols = halfStepsX * 2 + 1; 
+                
+                const startZ = -2.0;
+                const endZ = p.txLength + p.cylDiam + 3;
+                const numStepsZ = Math.ceil((endZ - startZ) / res);
+                
+                const activeDwells = this.dwells.filter(d => d.active);
+                
+                for (let zi = 0; zi <= numStepsZ; zi++) {
+                    const z = startZ + zi * res;
+                    const row = [];
+                    for (let xi = 0; xi < numCols; xi++) {
+                        const x = startX + xi * res;
+                        let dose = 0; 
+                        activeDwells.forEach(dw => dose += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, x, z, p.Sk));
+                        row.push(dose);
+                    }
+                    grid.push(row);
+                }
+                this.isodoseGrid = grid; 
+                this.gridConfig = { res, startX, startZ };
+            }
+
+            drawDebugCharts() {
+                if (!this.showDebug) return;
+                const p = this.getInputs();
+                
+                const ctx1 = this.chartCtx, w1 = this.chartCanvas.width, h1 = this.chartCanvas.height;
+                ctx1.clearRect(0, 0, w1, h1);
+                
+                ctx1.strokeStyle = '#22c55e'; ctx1.lineWidth = 1; ctx1.setLineDash([4, 2]);
+                ctx1.beginPath(); ctx1.moveTo(0, h1/2); ctx1.lineTo(w1, h1/2); ctx1.stroke(); ctx1.setLineDash([]);
+                
+                const pts = this.optPoints; 
+                if (pts && pts.length >= 2) {
+                    ctx1.beginPath(); ctx1.strokeStyle = '#166534'; ctx1.lineWidth = 2;
+                    pts.forEach((pt, i) => {
+                        const x = (i / (pts.length - 1)) * w1;
+                        const ratio = pt.currentDose ? (pt.currentDose / p.rxDose) : 0;
+                        const y = Math.max(5, Math.min(h1-5, h1 - ((ratio - 0.5) * h1))); 
+                        if (i === 0) ctx1.moveTo(x, y); else ctx1.lineTo(x, y);
+                    });
+                    ctx1.stroke();
+
+                    pts.forEach((pt, i) => {
+                        const x = (i / (pts.length - 1)) * w1;
+                        const ratio = pt.currentDose ? (pt.currentDose / p.rxDose) : 0;
+                        const y = Math.max(5, Math.min(h1-5, h1 - ((ratio - 0.5) * h1)));
+                        ctx1.fillStyle = '#22c55e'; ctx1.beginPath(); ctx1.arc(x, y, 2, 0, 7); ctx1.fill();
+                    });
+                }
+
+                const ctx2 = this.mseCtx, w2 = this.mseCanvas.width, h2 = this.mseCanvas.height;
+                ctx2.clearRect(0, 0, w2, h2);
+                
+                if (this.mseHistory && this.mseHistory.length > 1) {
+                    let minMse = Math.min(...this.mseHistory);
+                    let maxMse = Math.max(...this.mseHistory);
+                    if (maxMse === minMse) maxMse = minMse + 1e-6;
+                    
+                    let minLog = Math.log10(Math.max(1e-12, minMse));
+                    let maxLog = Math.log10(Math.max(1e-12, maxMse));
+                    let rangeLog = maxLog - minLog || 1;
+
+                    ctx2.beginPath();
+                    ctx2.strokeStyle = '#3b82f6';
+                    ctx2.lineWidth = 2;
+                    this.mseHistory.forEach((mse, i) => {
+                        let x = (i / (this.mseHistory.length - 1)) * w2;
+                        let logMse = Math.log10(Math.max(1e-12, mse));
+                        let y = h2 - ((logMse - minLog) / rangeLog) * h2;
+                        y = Math.max(2, Math.min(h2 - 2, y)); 
+                        if (i === 0) ctx2.moveTo(x, y); else ctx2.lineTo(x, y);
+                    });
+                    ctx2.stroke();
+                }
+            }
+
+            animate() {
+                try {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.drawDebugCharts();
+                    const step = this.zoom, cw = this.canvas.width, ch = this.canvas.height;
+                    const p = this.getInputs(), radius = p.cylDiam / 2;
+
+                    this.ctx.setLineDash([2, 4]); this.ctx.strokeStyle = '#94a3b8';
+                    for (let x = this.offset.x % step; x < cw; x += step) { this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, ch); this.ctx.stroke(); }
+                    for (let y = this.offset.y % step; y < ch; y += step) { this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(cw, y); this.ctx.stroke(); }
+                    this.ctx.setLineDash([]);
+
+                    this.ctx.save(); 
+                    try {
+                        this.ctx.translate(this.offset.x, this.offset.y);
+                        const r = radius * this.zoom;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, radius*this.zoom, r, Math.PI, 0);
+                        this.ctx.lineTo(r, (p.txLength+2)*this.zoom);
+                        this.ctx.lineTo(-r, (p.txLength+2)*this.zoom);
+                        this.ctx.closePath();
+                        
+                        this.ctx.fillStyle = 'rgba(203, 213, 225, 0.35)'; 
+                        this.ctx.fill();
+                        
+                        this.ctx.strokeStyle = '#64748b'; this.ctx.lineWidth = 2;
+                        this.ctx.stroke();
+
+                        this.ctx.strokeStyle = '#f97316'; this.ctx.lineWidth = 3;
+                        this.ctx.beginPath(); this.ctx.moveTo(-r*2.2, 0); this.ctx.lineTo(r*2.2, 0); this.ctx.stroke();
+                        this.ctx.beginPath(); this.ctx.moveTo(-r*2.2, p.txLength * this.zoom); this.ctx.lineTo(r*2.2, p.txLength * this.zoom); this.ctx.stroke();
+                        this.ctx.fillStyle = '#f97316'; this.ctx.font = 'bold 9px Inter';
+                        this.ctx.fillText("APEX (Z=0)", r*2.2+5, 4); this.ctx.fillText(`TX END (${p.txLength}cm)`, r*2.2+5, p.txLength * this.zoom + 4);
+
+
+                        if (this.hardPoints) {
+                            this.hardPoints.forEach(pt => {
+                                this.ctx.fillStyle = '#a855f7'; 
+                                this.ctx.beginPath(); this.ctx.arc(pt.x * this.zoom, pt.z * this.zoom, 4.5, 0, Math.PI * 2); this.ctx.fill();
+                                
+                                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                                this.ctx.beginPath(); this.ctx.rect(pt.x * this.zoom + 10, pt.z * this.zoom - 10, 110, 20); this.ctx.fill();
+                                this.ctx.strokeStyle = '#a855f7'; this.ctx.lineWidth = 1; this.ctx.stroke();
+                                
+                                this.ctx.fillStyle = '#1e293b'; this.ctx.font = 'bold 9px Inter';
+                                const val = pt.currentDose ? pt.currentDose.toFixed(2) : '0.00';
+                                this.ctx.fillText(`${pt.label}: ${val} Gy`, pt.x * this.zoom + 14, pt.z * this.zoom + 4);
+                            });
+                        }
+
+                        if (this.showDebug) {
+                            if (this.optPoints) this.optPoints.forEach(pt => { this.ctx.fillStyle='#22c55e'; this.ctx.beginPath(); this.ctx.arc(-pt.x*this.zoom, pt.z*this.zoom, 4, 0, 7); this.ctx.fill(); });
+                            if (this.surfacePoints) this.surfacePoints.forEach(pt => { this.ctx.fillStyle='#ef4444'; this.ctx.beginPath(); this.ctx.arc(-pt.x*this.zoom, pt.z*this.zoom, 3.5, 0, 7); this.ctx.fill(); });
+                            
+                            if (this.hoveredPoint) {
+                                const hpt = this.hoveredPoint; this.ctx.fillStyle = 'rgba(15, 23, 42, 0.95)'; this.ctx.beginPath();
+                                this.ctx.rect(-hpt.x*this.zoom-115, hpt.z*this.zoom-20, 100, 35); this.ctx.fill();
+                                this.ctx.fillStyle='white'; this.ctx.font='bold 9px Inter';
+                                this.ctx.fillText(`${hpt.label}`, -hpt.x*this.zoom-110, hpt.z*this.zoom-8);
+                                const cDose = hpt.currentDose ? hpt.currentDose.toFixed(2) : '0.00';
+                                this.ctx.fillStyle='#38bdf8'; this.ctx.fillText(`${cDose} Gy`, -hpt.x*this.zoom-110, hpt.z*this.zoom+4);
+                            }
+                        }
+
+                        if (this.isodoseGrid && this.isodoseGrid.length > 1) {
+                            const lvls = [{v: p.rxDose*2, c: '#ef4444'}, {v: p.rxDose*1.5, c: '#f97316'}, {v: p.rxDose, c: '#22c55e'}, {v: p.rxDose*0.5, c: '#3b82f6'}];
+                            const { res, startX, startZ } = this.gridConfig;
+                            lvls.forEach(lvl => {
+                                this.ctx.strokeStyle = lvl.c; this.ctx.lineWidth = 2.5; this.ctx.beginPath();
+                                for (let zi = 0; zi < this.isodoseGrid.length-1; zi++) {
+                                    for (let xi = 0; xi < this.isodoseGrid[zi].length-1; xi++) {
+                                        const v = [this.isodoseGrid[zi][xi], this.isodoseGrid[zi][xi+1], this.isodoseGrid[zi+1][xi+1], this.isodoseGrid[zi+1][xi]];
+                                        let cfg = 0; if (v[0]>=lvl.v) cfg|=8; if (v[1]>=lvl.v) cfg|=4; if (v[2]>=lvl.v) cfg|=2; if (v[3]>=lvl.v) cfg|=1;
+                                        if (cfg===0 || cfg===15) continue;
+                                        const wz = startZ + zi * res, wx = startX + xi * res;
+                                        const pPts = [{x: wx + res*((lvl.v-v[0])/(v[1]-v[0])), z: wz}, {x: wx+res, z: wz + res*((lvl.v-v[1])/(v[2]-v[1]))}, {x: wx + res*((lvl.v-v[3])/(v[2]-v[3])), z: wz+res}, {x: wx, z: wz + res*((lvl.v-v[0])/(v[3]-v[0]))}];
+                                        const draw = (a, b) => { this.ctx.moveTo(a.x*this.zoom, a.z*this.zoom); this.ctx.lineTo(b.x*this.zoom, b.z*this.zoom); };
+                                        if (cfg===1 || cfg===14) draw(pPts[3], pPts[2]); else if (cfg===2 || cfg===13) draw(pPts[2], pPts[1]); else if (cfg===3 || cfg===12) draw(pPts[3], pPts[1]); else if (cfg===4 || cfg===11) draw(pPts[0], pPts[1]); else if (cfg===5) { draw(pPts[3], pPts[0]); draw(pPts[2], pPts[1]); } else if (cfg===6 || cfg===9) draw(pPts[0], pPts[2]); else if (cfg===7 || cfg===8) draw(pPts[3], pPts[0]); else if (cfg===10) { draw(pPts[0], pPts[1]); draw(pPts[3], pPts[2]); }
+                                    }
+                                }
+                                this.ctx.stroke();
+                            });
+                        }
+                        if (this.dwells) {
+                            this.dwells.forEach(dw => { if (dw.active) { this.ctx.fillStyle = '#f59e0b'; this.ctx.fillRect(-3, (dw.z-0.175)*this.zoom, 6, 0.35*this.zoom); this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(0, dw.z*this.zoom, 1, 0, 7); this.ctx.fill(); } });
+                        }
+                    } finally {
+                        this.ctx.restore();
+                    }
+                } catch (e) {
+                    console.error("Render loop error prevented:", e);
+                }
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        const app = new App();
+    </script>
+</body>
+</html>
