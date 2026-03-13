@@ -559,6 +559,7 @@
             }
 
             onTxLengthChange() { 
+                document.getElementById('dwellBeyond').value = "1.0"; // Reset Beyond Tx when Tx Length changes
                 this.isOptimizing = false;
                 this.generateDwellPositions(false); 
                 this.centerView();
@@ -994,7 +995,7 @@
                                 this.ctx.beginPath(); this.ctx.rect(pt.x * this.zoom + 10, pt.z * this.zoom - 10, 110, 20); this.ctx.fill();
                                 this.ctx.strokeStyle = '#a855f7'; this.ctx.lineWidth = 1; this.ctx.stroke();
                                 
-                                this.ctx.fillStyle = '#1e293b'; this.ctx.font = 'bold 9px Inter';
+                                this.ctx.fillStyle = '#1e293b'; this.ctx.font = 'bold 11px Inter';
                                 const val = pt.currentDose ? pt.currentDose.toFixed(2) : '0.00';
                                 this.ctx.fillText(`${pt.label}: ${val} Gy`, pt.x * this.zoom + 14, pt.z * this.zoom + 4);
                             });
