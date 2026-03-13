@@ -583,7 +583,8 @@
             }
 
             generateDwellPositions(keepOverrides = true) {
-                const p = this.getInputs(), startZ = 0.65, maxRange = p.txLength + 2.5;
+                const p = this.getInputs(), startZ = 0.65;
+                const maxRange = p.txLength + Math.max(2.5, p.dwellBeyond + 1.0); // Safely expand generation range if needed
                 const prevStates = {};
                 if (keepOverrides && this.dwells && this.dwells.length > 0) {
                     this.dwells.forEach(d => prevStates[d.z.toFixed(2)] = d.active);
@@ -979,11 +980,62 @@
                         this.ctx.strokeStyle = '#64748b'; this.ctx.lineWidth = 2;
                         this.ctx.stroke();
 
-                        this.ctx.strokeStyle = '#f97316'; this.ctx.lineWidth = 3;
-                        this.ctx.beginPath(); this.ctx.moveTo(-r*2.2, 0); this.ctx.lineTo(r*2.2, 0); this.ctx.stroke();
-                        this.ctx.beginPath(); this.ctx.moveTo(-r*2.2, p.txLength * this.zoom); this.ctx.lineTo(r*2.2, p.txLength * this.zoom); this.ctx.stroke();
-                        this.ctx.fillStyle = '#f97316'; this.ctx.font = 'bold 9px Inter';
-                        this.ctx.fillText("APEX (Z=0)", r*2.2+5, 4); this.ctx.fillText(`TX END (${p.txLength}cm)`, r*2.2+5, p.txLength * this.zoom + 4);
+                        // Draw Orange Rx lines extending further to the left to meet the dimension line
+                        this.ctx.strokeStyle = '#f97316'; this.ctx.lineWidth = 2.5;
+                        this.ctx.beginPath(); this.ctx.moveTo(-r*2.4, 0); this.ctx.lineTo(r*2.2, 0); this.ctx.stroke();
+                        this.ctx.beginPath(); this.ctx.moveTo(-r*2.4, p.txLength * this.zoom); this.ctx.lineTo(r*2.2, p.txLength * this.zoom); this.ctx.stroke();
+                        
+                        // Draw Vertical Tx Length Dimension Line & Rotated Text
+                        const dimLineX = -r * 2.1;
+                        const topZ = 0;
+                        const bottomZ = p.txLength * this.zoom;
+                        const midZ = (topZ + bottomZ) / 2;
+
+                        this.ctx.strokeStyle = '#e11d48'; // Red color
+                        this.ctx.lineWidth = 1.5;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(dimLineX, topZ);
+                        this.ctx.lineTo(dimLineX, bottomZ);
+                        this.ctx.stroke();
+
+                        // Top arrow
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(dimLineX - 4, topZ + 8);
+                        this.ctx.lineTo(dimLineX, topZ);
+                        this.ctx.lineTo(dimLineX + 4, topZ + 8);
+                        this.ctx.stroke();
+
+                        // Bottom arrow
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(dimLineX - 4, bottomZ - 8);
+                        this.ctx.lineTo(dimLineX, bottomZ);
+                        this.ctx.lineTo(dimLineX + 4, bottomZ - 8);
+                        this.ctx.stroke();
+
+                        // Rotated text with background box
+                        this.ctx.save();
+                        this.ctx.translate(dimLineX, midZ);
+                        this.ctx.rotate(-Math.PI / 2);
+                        
+                        this.ctx.font = '500 12px Inter';
+                        const dimText = `Tx Length (${p.txLength.toFixed(1)}cm)`;
+                        const dimTextWidth = this.ctx.measureText(dimText).width;
+
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.strokeStyle = '#94a3b8';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.beginPath();
+                        this.ctx.rect(-dimTextWidth/2 - 8, -12, dimTextWidth + 16, 24);
+                        this.ctx.fill();
+                        this.ctx.stroke();
+
+                        this.ctx.fillStyle = '#1e293b';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.textBaseline = 'middle';
+                        this.ctx.fillText(dimText, 0, 1);
+                        this.ctx.restore();
+
 
                         if (this.isodoseGrid && this.isodoseGrid.length > 1) {
                             const lvls = [{v: p.rxDose*2, c: '#ef4444'}, {v: p.rxDose*1.5, c: '#f97316'}, {v: p.rxDose, c: '#22c55e'}, {v: p.rxDose*0.5, c: '#3b82f6'}];
@@ -1010,13 +1062,17 @@
                                 this.ctx.fillStyle = '#a855f7'; 
                                 this.ctx.beginPath(); this.ctx.arc(pt.x * this.zoom, pt.z * this.zoom, 4.5, 0, Math.PI * 2); this.ctx.fill();
                                 
+                                this.ctx.font = 'bold 12px Inter';
+                                const val = pt.currentDose ? pt.currentDose.toFixed(2) : '0.00';
+                                const labelText = `${pt.label}: ${val} Gy`;
+                                const tw = this.ctx.measureText(labelText).width;
+
                                 this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                                this.ctx.beginPath(); this.ctx.rect(pt.x * this.zoom + 10, pt.z * this.zoom - 10, 110, 20); this.ctx.fill();
+                                this.ctx.beginPath(); this.ctx.rect(pt.x * this.zoom + 10, pt.z * this.zoom - 14, tw + 12, 26); this.ctx.fill();
                                 this.ctx.strokeStyle = '#a855f7'; this.ctx.lineWidth = 1; this.ctx.stroke();
                                 
-                                this.ctx.fillStyle = '#1e293b'; this.ctx.font = 'bold 11px Inter';
-                                const val = pt.currentDose ? pt.currentDose.toFixed(2) : '0.00';
-                                this.ctx.fillText(`${pt.label}: ${val} Gy`, pt.x * this.zoom + 14, pt.z * this.zoom + 4);
+                                this.ctx.fillStyle = '#1e293b';
+                                this.ctx.fillText(labelText, pt.x * this.zoom + 16, pt.z * this.zoom + 4);
                             });
                         }
 
