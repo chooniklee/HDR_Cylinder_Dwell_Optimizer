@@ -985,6 +985,25 @@
                         this.ctx.fillStyle = '#f97316'; this.ctx.font = 'bold 9px Inter';
                         this.ctx.fillText("APEX (Z=0)", r*2.2+5, 4); this.ctx.fillText(`TX END (${p.txLength}cm)`, r*2.2+5, p.txLength * this.zoom + 4);
 
+                        if (this.isodoseGrid && this.isodoseGrid.length > 1) {
+                            const lvls = [{v: p.rxDose*2, c: '#ef4444'}, {v: p.rxDose*1.5, c: '#f97316'}, {v: p.rxDose, c: '#22c55e'}, {v: p.rxDose*0.5, c: '#3b82f6'}];
+                            const { res, startX, startZ } = this.gridConfig;
+                            lvls.forEach(lvl => {
+                                this.ctx.strokeStyle = lvl.c; this.ctx.lineWidth = 2.5; this.ctx.beginPath();
+                                for (let zi = 0; zi < this.isodoseGrid.length-1; zi++) {
+                                    for (let xi = 0; xi < this.isodoseGrid[zi].length-1; xi++) {
+                                        const v = [this.isodoseGrid[zi][xi], this.isodoseGrid[zi][xi+1], this.isodoseGrid[zi+1][xi+1], this.isodoseGrid[zi+1][xi]];
+                                        let cfg = 0; if (v[0]>=lvl.v) cfg|=8; if (v[1]>=lvl.v) cfg|=4; if (v[2]>=lvl.v) cfg|=2; if (v[3]>=lvl.v) cfg|=1;
+                                        if (cfg===0 || cfg===15) continue;
+                                        const wz = startZ + zi * res, wx = startX + xi * res;
+                                        const pPts = [{x: wx + res*((lvl.v-v[0])/(v[1]-v[0])), z: wz}, {x: wx+res, z: wz + res*((lvl.v-v[1])/(v[2]-v[1]))}, {x: wx + res*((lvl.v-v[3])/(v[2]-v[3])), z: wz+res}, {x: wx, z: wz + res*((lvl.v-v[0])/(v[3]-v[0]))}];
+                                        const draw = (a, b) => { this.ctx.moveTo(a.x*this.zoom, a.z*this.zoom); this.ctx.lineTo(b.x*this.zoom, b.z*this.zoom); };
+                                        if (cfg===1 || cfg===14) draw(pPts[3], pPts[2]); else if (cfg===2 || cfg===13) draw(pPts[2], pPts[1]); else if (cfg===3 || cfg===12) draw(pPts[3], pPts[1]); else if (cfg===4 || cfg===11) draw(pPts[0], pPts[1]); else if (cfg===5) { draw(pPts[3], pPts[0]); draw(pPts[2], pPts[1]); } else if (cfg===6 || cfg===9) draw(pPts[0], pPts[2]); else if (cfg===7 || cfg===8) draw(pPts[3], pPts[0]); else if (cfg===10) { draw(pPts[0], pPts[1]); draw(pPts[3], pPts[2]); }
+                                    }
+                                }
+                                this.ctx.stroke();
+                            });
+                        }
 
                         if (this.hardPoints) {
                             this.hardPoints.forEach(pt => {
@@ -1015,25 +1034,6 @@
                             }
                         }
 
-                        if (this.isodoseGrid && this.isodoseGrid.length > 1) {
-                            const lvls = [{v: p.rxDose*2, c: '#ef4444'}, {v: p.rxDose*1.5, c: '#f97316'}, {v: p.rxDose, c: '#22c55e'}, {v: p.rxDose*0.5, c: '#3b82f6'}];
-                            const { res, startX, startZ } = this.gridConfig;
-                            lvls.forEach(lvl => {
-                                this.ctx.strokeStyle = lvl.c; this.ctx.lineWidth = 2.5; this.ctx.beginPath();
-                                for (let zi = 0; zi < this.isodoseGrid.length-1; zi++) {
-                                    for (let xi = 0; xi < this.isodoseGrid[zi].length-1; xi++) {
-                                        const v = [this.isodoseGrid[zi][xi], this.isodoseGrid[zi][xi+1], this.isodoseGrid[zi+1][xi+1], this.isodoseGrid[zi+1][xi]];
-                                        let cfg = 0; if (v[0]>=lvl.v) cfg|=8; if (v[1]>=lvl.v) cfg|=4; if (v[2]>=lvl.v) cfg|=2; if (v[3]>=lvl.v) cfg|=1;
-                                        if (cfg===0 || cfg===15) continue;
-                                        const wz = startZ + zi * res, wx = startX + xi * res;
-                                        const pPts = [{x: wx + res*((lvl.v-v[0])/(v[1]-v[0])), z: wz}, {x: wx+res, z: wz + res*((lvl.v-v[1])/(v[2]-v[1]))}, {x: wx + res*((lvl.v-v[3])/(v[2]-v[3])), z: wz+res}, {x: wx, z: wz + res*((lvl.v-v[0])/(v[3]-v[0]))}];
-                                        const draw = (a, b) => { this.ctx.moveTo(a.x*this.zoom, a.z*this.zoom); this.ctx.lineTo(b.x*this.zoom, b.z*this.zoom); };
-                                        if (cfg===1 || cfg===14) draw(pPts[3], pPts[2]); else if (cfg===2 || cfg===13) draw(pPts[2], pPts[1]); else if (cfg===3 || cfg===12) draw(pPts[3], pPts[1]); else if (cfg===4 || cfg===11) draw(pPts[0], pPts[1]); else if (cfg===5) { draw(pPts[3], pPts[0]); draw(pPts[2], pPts[1]); } else if (cfg===6 || cfg===9) draw(pPts[0], pPts[2]); else if (cfg===7 || cfg===8) draw(pPts[3], pPts[0]); else if (cfg===10) { draw(pPts[0], pPts[1]); draw(pPts[3], pPts[2]); }
-                                    }
-                                }
-                                this.ctx.stroke();
-                            });
-                        }
                         if (this.dwells) {
                             this.dwells.forEach(dw => { if (dw.active) { this.ctx.fillStyle = '#f59e0b'; this.ctx.fillRect(-3, (dw.z-0.175)*this.zoom, 6, 0.35*this.zoom); this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(0, dw.z*this.zoom, 1, 0, 7); this.ctx.fill(); } });
                         }
