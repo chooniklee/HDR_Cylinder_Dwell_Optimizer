@@ -4,23 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auto HDR Cylinder Dwell Time Calculator</title>
+    <!-- Tailwind CSS is used for fast and modern UI styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Import modern web fonts for UI and Data Tables */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap');
         
+        /* Base styling */
         body { background-color: #f1f5f9; color: #1e293b; font-family: 'Inter', sans-serif; overflow: hidden; }
         
+        /* Reusable UI Component Styles */
         .premium-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        
         .premium-input-group { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; transition: all 0.2s; }
         .premium-input-group:focus-within { border-color: #3b82f6; background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
         
+        /* Input fields */
         .side-input { 
             width: 100%; border: none; background: transparent; 
             font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; 
             text-align: center; color: #1e293b; outline: none;
         }
-
         .table-time-input {
             width: 100%; border: 1px solid transparent; background: transparent;
             font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
@@ -32,6 +35,7 @@
         
         .input-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 2px; color: #475569; letter-spacing: 0.01em; text-align: left; padding-left: 4px; }
         
+        /* Button styling */
         .btn-optimize { 
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 10px; border-radius: 8px; 
             font-weight: 700; font-size: 13px; width: 100%; transition: all 0.2s;
@@ -40,12 +44,14 @@
         .btn-optimize:hover { transform: translateY(-1px); box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3); }
         .btn-optimize:disabled { background: #cbd5e1 !important; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.7; animation: none !important; }
 
+        /* Tables for dwells */
         .stats-table { width: 100%; border-collapse: separate; border-spacing: 0; }
         .stats-table th { background-color: #f8fafc; padding: 4px 2px; font-size: 11px; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; }
         .stats-table td { padding: 1px 2px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 600; color: #334155; }
         
         .checkbox-custom { width: 15px; height: 15px; cursor: pointer; accent-color: #2563eb; }
 
+        /* General Toggle/Option Buttons */
         .toggle-btn {
             background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 10px;
             font-size: 10px; font-weight: 700; color: #475569; cursor: pointer; transition: all 0.2s;
@@ -59,6 +65,8 @@
         .diam-btn.active-diam { background: #3b82f6; color: white; border-color: #2563eb; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3); }
 
         #chartContainer { pointer-events: none; }
+        
+        /* Custom Scrollbar for cleaner look */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -66,6 +74,7 @@
 </head>
 <body class="h-screen flex flex-col bg-slate-100 p-3 gap-3">
 
+    <!-- Top Header Area -->
     <header class="h-14 px-6 border border-slate-200 bg-white flex justify-between items-center shadow-sm z-30 rounded-xl shrink-0">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md">
@@ -73,19 +82,26 @@
             </div>
             <div>
                 <h1 class="text-[20px] font-black text-slate-800 leading-none tracking-tight">Varian Universal Stump Cylinder Dwell Optimizer</h1>
-                <p class="text-[11px] text-slate-400 font-bold mt-0.5">Developed by Choonik Lee, PhD | University of Michigan</p>
+                <!-- Update Date added here -->
+                <p class="text-[11px] text-slate-400 font-bold mt-0.5">Developed by Choonik Lee, PhD | University of Michigan (Last updated on 03/15/2026)</p>
             </div>
         </div>
     </header>
 
+    <!-- Main Application Container -->
     <div class="flex flex-1 overflow-hidden gap-3">
+        
+        <!-- Left Sidebar: Inputs & Dwell Times -->
         <aside class="w-[320px] border border-slate-200 bg-white flex flex-col z-20 shadow-sm rounded-xl relative">
             <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                
+                <!-- Inputs Section -->
                 <section class="space-y-3">
                     <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2">
                         <div class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Inputs
                     </h2>
                     <div class="grid grid-cols-2 gap-3">
+                        <!-- Geometry & Prescription Settings -->
                         <div class="col-span-2 premium-input-group">
                             <span class="input-label">Cylinder Diameter (cm)</span>
                             <div class="flex justify-between gap-1.5 mt-1.5">
@@ -112,6 +128,7 @@
                             <input type="number" id="rxDose" value="6.0" step="0.5" class="side-input text-green-600" oninput="app.onRxDoseChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onRxDoseChange')">
                         </div>
                         
+                        <!-- Optimization Weights/Preferences -->
                         <div class="col-span-2 premium-input-group">
                             <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dome Coverage Preference</span><span id="dome-angle-val" class="text-[11px] font-bold text-blue-600">30°</span></div>
                             <input type="range" id="domeAngle" min="0" max="90" step="1" value="30" class="range-input mt-2" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
@@ -122,9 +139,10 @@
                             <input type="range" id="smoothWeight" min="0" max="1.0" step="0.01" value="0.10" class="range-input mt-2" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
                         </div>
                         
+                        <!-- Core Optimization Parameters -->
                         <div class="premium-input-group">
                             <span class="input-label">Iterations</span>
-                            <input type="number" id="maxIterInput" value="80000" step="10000" class="side-input text-purple-600" onchange="app.promptOptimization()" onwheel="app.handleGenericWheel(event, this, 'promptOptimization')">
+                            <input type="number" id="maxIterInput" value="150000" step="10000" class="side-input text-purple-600" onchange="app.promptOptimization()" onwheel="app.handleGenericWheel(event, this, 'promptOptimization')">
                         </div>
                         
                         <div class="premium-input-group">
@@ -139,6 +157,7 @@
                     </div>
                 </section>
 
+                <!-- Dwell Times Output Table -->
                 <section class="flex flex-col min-h-[250px] pt-2">
                     <div class="flex items-center justify-between mb-2">
                         <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2">
@@ -161,9 +180,11 @@
             </div>
         </aside>
 
+        <!-- Right Main View: Canvas & Charts -->
         <main class="flex-1 relative bg-slate-50 overflow-hidden border border-slate-200 rounded-xl shadow-sm">
             <canvas id="mainCanvas"></canvas>
 
+            <!-- Debug Legend (Top Left) -->
             <div id="debug-legend" class="absolute top-5 left-5 p-4 bg-white/95 shadow-xl rounded-xl border border-slate-200 transition-all duration-300">
                 <h4 class="text-[10px] font-bold text-slate-500 mb-3 border-b pb-1 border-slate-200">Optimization Targets</h4>
                 <div class="space-y-2.5">
@@ -182,6 +203,7 @@
                 </div>
             </div>
             
+            <!-- Real-time Charts (Top Right) -->
             <div id="chartContainer" class="absolute top-5 right-5 w-80 premium-card p-4 bg-white/95 backdrop-blur transition-all duration-300 flex flex-col gap-4 shadow-xl">
                 <div>
                     <h4 class="text-[10px] font-bold text-slate-500 mb-1 text-center">Dose Profiler (Rx vs Actual)</h4>
@@ -207,6 +229,7 @@
                 </div>
             </div>
 
+            <!-- Isodose Color Legend & UI Toggles (Bottom Left) -->
             <div class="absolute bottom-6 left-6 flex flex-col gap-3">
                 <div class="p-4 bg-white/95 shadow-xl rounded-xl border border-slate-200 min-w-[200px]">
                     <div class="space-y-2">
@@ -218,6 +241,7 @@
                 </div>
                 <div class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-semibold shadow-lg flex items-center gap-4">
                     <button id="toggle-debug" class="toggle-btn active" onclick="app.toggleDebug()">Optimization Detail: ON</button>
+                    <!-- Opens detailed TG-43 parameter breakdown for debugging -->
                     <button class="bg-slate-700 border border-slate-600 rounded-md px-3 py-1 font-bold text-slate-200 hover:bg-blue-600 hover:border-blue-500 hover:text-white transition-all shadow-sm" onclick="app.openTG43Detail()">TG-43 Detail</button>
                     <span class="opacity-60 ml-2">WHEEL: Zoom / Value Ctrl</span>
                 </div>
@@ -225,10 +249,19 @@
         </main>
     </div>
 
+    <!-- CORE LOGIC & PHYSICS SCRIPT -->
     <script>
+        /**
+         * TG43 Object
+         * Contains standard physics data and formulas for Ir-192 Brachytherapy
+         * based on the AAPM TG-43 U1 formalism.
+         */
         const TG43 = {
+            // Radial Dose Function Data (gL)
             gL_distances: [0, 0.2, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
             gL_values: [0.998, 0.998, 0.997, 0.996, 0.998, 1, 1.003, 1.006, 1.006, 1.004, 0.999, 0.993, 0.968, 0.935],
+            
+            // Anisotropy Function Data (F(r, theta)) Grid
             r_headers: [0, 0.2, 0.4, 0.6, 0.8, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10],
             theta_rows: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 165, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180],
             F_table: [
@@ -272,6 +305,8 @@
 			        [0.3294,0.3294,0.3398,0.3502,0.3606,0.3710,0.3840,0.3970,0.4100,0.4230,0.4490,0.4750,0.5010,0.5270,0.5483,0.5721,0.6212,0.6586],
 			        [0.4167,0.4167,0.4211,0.4255,0.4299,0.4343,0.4399,0.4454,0.4509,0.4564,0.4674,0.4785,0.4895,0.5005,0.5226,0.5446,0.5887,0.6328]
             ],
+            
+            // Linear Interpolation for 1D Array (used for Radial Dose Function gL)
             interpolate1D(x, xArr, yArr) {
                 if (x <= xArr[0]) return yArr[0];
                 if (x >= xArr[xArr.length - 1]) return yArr[yArr.length - 1];
@@ -283,6 +318,8 @@
                 }
                 return 1;
             },
+
+            // Bilinear Interpolation for 2D Array (used for Anisotropy Function F)
             interpolate2D(r, thetaDeg) {
                 const rArr = TG43.r_headers, tArr = TG43.theta_rows, table = TG43.F_table;
                 const rVal = Math.min(Math.max(r, rArr[0]), rArr[rArr.length - 1]);
@@ -290,89 +327,136 @@
                 let ri = 0; while (ri < rArr.length - 2 && rVal > rArr[ri + 1]) ri++;
                 let ti = 0; while (ti < tArr.length - 2 && tVal > tArr[ti + 1]) ti++;
                 const r0 = rArr[ri], r1 = rArr[ri + 1], t0 = tArr[ti], t1 = tArr[ti + 1];
+                
+                // Calculate weights
                 const u = (rVal - r0) / (r1 - r0), v = (tVal - t0) / (t1 - t0);
+                
+                // Get 4 surrounding points from table
                 const f00 = table[ti][ri], f10 = table[ti][ri + 1], f01 = table[ti + 1][ri], f11 = table[ti + 1][ri + 1];
+                
+                // Bilinear formula
                 return (1-u)*(1-v)*f00 + u*(1-v)*f10 + (1-u)*v*f01 + u*v*f11;
             },
+
+            // Geometry Factor Calculation G(r, theta)
+            // Matches commercial TPS logic handling exact on-axis vs off-axis scenarios
             G(r, thetaRad) {
-                const L = 0.35; if (r < 0.01) return 10000;
+                const L = 0.35; // Effective active length of Ir-192 source in cm
+                
+                // Protect against singularity when exactly at the source center
+                if (r < 0.01) return 10000;
+                
                 const x = r * Math.sin(thetaRad), y = r * Math.cos(thetaRad);
-                if (Math.abs(x) < 0.001) { const val = r * r - (L * L / 4); return 1 / Math.max(0.01, Math.abs(val)); }
+                
+                // On-axis logic (when angle is exactly 0 or PI to avoid division by zero)
+                if (Math.abs(x) < 0.001) { 
+                    const val = r * r - (L * L / 4); 
+                    return 1 / Math.max(0.01, Math.abs(val)); 
+                }
+                
+                // Off-axis logic using subtended angles (beta)
                 const beta = Math.atan2(y + L / 2, x) - Math.atan2(y - L / 2, x);
                 return Math.abs(beta / (L * x));
             },
+
+            // Main function to calculate Dose Rate (Gy/hr) at a specific point from a single dwell
             calculateDoseRate(dwX, dwZ, dwOrX, dwOrZ, ptX, ptZ, Sk) {
                 const dx = ptX - dwX, dz = ptZ - dwZ;
                 const r = Math.sqrt(dx*dx + dz*dz); 
+                
+                // If point is too close to source (< 0.5mm), return Infinity to push isodose lines outward smoothly
                 if (r < 0.05) return Infinity; 
+                
+                // Calculate angle from the source longitudinal axis
                 const cosTheta = (dx * dwOrX + dz * dwOrZ) / r;
                 const thetaRad = Math.acos(Math.max(-1, Math.min(1, cosTheta)));
                 const thetaDeg = thetaRad * 180 / Math.PI;
+                
+                // Fetch TG43 parameters
                 const g = TG43.interpolate1D(r, this.gL_distances, this.gL_values);
                 const F = TG43.interpolate2D(r, thetaDeg);
                 const Geom = TG43.G(r, thetaRad);
+                
+                // Sk (Air Kerma Strength) * Dose Rate Constant (1.1165) * (Geometry / G_ref) * Radial * Anisotropy
+                // G_ref is evaluated at r=1cm, theta=90 deg (which is 0.989915 for L=0.35cm)
+                // Result is divided by 3600 to convert /hr to /sec for internal usage
                 return (Sk * 1.1165 * (Geom / 0.989915) * g * F / 100) / 3600; 
             }
         };
 
+        /**
+         * Main Application Class
+         * Handles state management, rendering, UI interaction, and the optimization loop.
+         */
         class App {
             constructor() {
+                // Main canvas for drawing the cylinder and isodose lines
                 this.canvas = document.getElementById('mainCanvas');
                 this.ctx = this.canvas.getContext('2d');
+                
+                // Real-time debug charts
                 this.chartCanvas = document.getElementById('debugChart');
                 this.chartCtx = this.chartCanvas.getContext('2d');
                 this.mseCanvas = document.getElementById('mseChart');
                 this.mseCtx = this.mseCanvas.getContext('2d');
                 
-                this.dwells = [];
-                this.isodoseGrid = [];
-                this.optPoints = [];      
-                this.surfacePoints = [];  
-                this.hardPoints = [];     
-                this.mseHistory = [];
+                // Core data structures
+                this.dwells = [];          // List of dwell positions and times
+                this.isodoseGrid = [];     // 2D Array storing calculated doses for contouring
+                this.optPoints = [];       // Target points along the cylinder surface (e.g., Rx Line)
+                this.surfacePoints = [];   // Constraint points to prevent extreme hot spots (e.g., 200% line)
+                this.hardPoints = [];      // Mandatory anchor points (Rx Mid and Inf End)
+                this.mseHistory = [];      // Tracks optimization error over time
                 
-                // Debug Mode Default ON
-                this.showDebug = true; 
+                this.showDebug = true;     // Debug mode toggle state
                 
+                // Default settings
                 this.currentDiam = 3.0;
                 this.lastRxDose = 6.0;
 
+                // Optimization state variables
                 this.isOptimizing = false;
                 this.currentIter = 0;
-                this.maxIter = 80000;
+                this.maxIter = 150000;
                 this.targetMSE = 1e-10; 
+                
+                // Pre-calculated Matrices to speed up optimization loop significantly
                 this.M_target = [];
                 this.M_const = [];
                 this.M_hard = [];
+                
+                // Adam optimizer internal state variables
                 this.adam_m = [];
                 this.adam_v = [];
                 this.adam_t = 0;
 
+                // Canvas viewport state
                 this.zoom = 60;
                 this.offset = { x: 0, y: 150 };
                 this.isDragging = false;
                 this.lastMouse = { x: 0, y: 0 };
                 this.hoveredPoint = null;
 
+                // Initialize environment
                 this.initEventListeners();
                 this.resize();
                 
+                // Setup defaults
                 const inputs = this.getInputs();
                 this.lastRxDose = inputs.rxDose;
                 this.updateDoseLabels(this.lastRxDose);
-                
                 this.initDebugUI();
                 
-                // Initialize positions, build geometry, center view, and auto-start
+                // Generate geometry and start immediate background calculation
                 this.generateDwellPositions(false); 
                 this.centerView();
                 this.calculate(); 
                 
-                // Safely start render loop
+                // Start drawing loop
                 this.animate(); 
             }
 
-            // Universal mouse wheel handler for input fields
+            // Universal mouse wheel handler to allow scrolling to change input values
             handleGenericWheel(event, inputEl, callbackName) {
                 event.preventDefault();
                 const step = parseFloat(inputEl.getAttribute('step')) || 1;
@@ -380,19 +464,23 @@
                 let val = parseFloat(inputEl.value) || 0;
                 val += delta;
 
+                // Respect min/max bounds of the input
                 if (inputEl.hasAttribute('min')) val = Math.max(parseFloat(inputEl.getAttribute('min')), val);
                 if (inputEl.hasAttribute('max')) val = Math.min(parseFloat(inputEl.getAttribute('max')), val);
 
+                // Keep decimal precision clean
                 let decimals = 0;
                 const stepStr = inputEl.getAttribute('step');
                 if (stepStr && stepStr.includes('.')) decimals = stepStr.split('.')[1].length;
                 inputEl.value = val.toFixed(decimals);
 
+                // Trigger the relevant callback function if provided
                 if (callbackName && typeof this[callbackName] === 'function') {
                     this[callbackName](inputEl.value);
                 }
             }
 
+            // Centers the cylinder view on the canvas
             centerView() {
                 const p = this.getInputs();
                 this.offset.x = this.canvas.width / 2;
@@ -400,6 +488,7 @@
                 this.offset.y = this.canvas.height / 2 - (midZ * this.zoom);
             }
 
+            // Initializes the UI elements for the debug panels
             initDebugUI() {
                 const chart = document.getElementById('chartContainer');
                 const legend = document.getElementById('debug-legend');
@@ -409,6 +498,7 @@
                 if(btn) { btn.innerText = "Optimization Detail: ON"; btn.classList.add("active"); }
             }
 
+            // Sets up mouse/window events (Resize, Zooming, Panning)
             initEventListeners() {
                 window.addEventListener('resize', () => this.resize());
                 this.canvas.addEventListener('wheel', e => { this.zoom *= e.deltaY > 0 ? 0.9 : 1.1; e.preventDefault(); }, { passive: false });
@@ -416,32 +506,39 @@
                 window.addEventListener('mousemove', e => { 
                     const rect = this.canvas.getBoundingClientRect();
                     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+                    
+                    // Handle canvas panning
                     if (this.isDragging) {
                         this.offset.x += (e.clientX - this.lastMouse.x);
                         this.offset.y += (e.clientY - this.lastMouse.y);
                         this.lastMouse = { x: e.clientX, y: e.clientY };
                     }
+                    
+                    // Check if mouse is hovering over an optimization point
                     if (this.showDebug) this.checkHover(mx, my);
                 });
                 window.addEventListener('mouseup', () => this.isDragging = false);
             }
 
+            // Detects if the user's mouse is near a calculation point to show its dose tooltip
             checkHover(mx, my) {
                 const worldX = (mx - this.offset.x) / this.zoom, worldZ = (my - this.offset.y) / this.zoom;
                 let found = null;
-                let minDist = 0.2; // 최대 인식 반경 0.2cm로 제한
+                let minDist = 0.2; // Maximum detection radius in cm
                 const points = [...this.optPoints, ...this.surfacePoints];
+                
+                // Find the closest point within the radius
                 for (let pt of points) {
                     const dist = Math.sqrt((-pt.x - worldX)**2 + (pt.z - worldZ)**2);
-                    // 반경 내에 있는 첫 번째 점이 아니라, 가장 가까운 점(최단 거리)을 찾음
                     if (dist < minDist) { 
                         minDist = dist;
                         found = pt; 
                     }
                 }
-                this.hoveredPoint = found;
+                this.hoveredPoint = found; // Store it to be drawn in animate()
             }
 
+            // Toggles the visibility of debug charts and legends
             toggleDebug() {
                 this.showDebug = !this.showDebug;
                 const btn = document.getElementById('toggle-debug'), 
@@ -457,6 +554,7 @@
                 }
             }
 
+            // Handles cylinder diameter button clicks
             setDiameter(val, btn) {
                 this.currentDiam = val;
                 document.querySelectorAll('.diam-btn').forEach(b => b.classList.remove('active-diam'));
@@ -465,31 +563,33 @@
                 this.isOptimizing = false;
                 this.generateDwellPositions(true);
                 this.buildGeometry();
-                this.calculate();
+                this.calculate(); // Re-run optimization with new geometry
             }
 
+            // Handles Dome Angle preference changes
             onDomeAngleChange(val) {
-                if (val === undefined) {
-                    val = document.getElementById('domeAngle').value;
-                }
+                if (val === undefined) val = document.getElementById('domeAngle').value;
                 document.getElementById('dome-angle-val').innerText = val + '°';
                 this.isOptimizing = false;
                 this.buildGeometry();
                 this.calculate();
             }
 
+            // Handles Smoothing Weight changes
             onSmoothChange(val) {
                 document.getElementById('smooth-val').innerText = val;
                 this.isOptimizing = false;
                 this.calculate();
             }
             
+            // Handles changes to how far dwells should extend beyond the Tx length
             onDwellBeyondChange() {
                 this.isOptimizing = false;
                 this.generateDwellPositions(false); 
                 this.calculate();
             }
 
+            // Automatically updates the 'Beyond Tx' input field if dwells are manually toggled
             updateBeyondTxFromDwells() {
                 const txLength = parseFloat(document.getElementById('txLength').value) || 4.0;
                 const activeDwells = this.dwells.filter(d => d.active);
@@ -502,6 +602,7 @@
                 document.getElementById('dwellBeyond').value = beyond.toFixed(1);
             }
 
+            // Updates the color legend based on the new prescription dose
             updateDoseLabels(dose) {
                 document.getElementById('label-200').innerText = (dose * 2.0).toFixed(1) + " Gy";
                 document.getElementById('label-150').innerText = (dose * 1.5).toFixed(1) + " Gy";
@@ -509,12 +610,13 @@
                 document.getElementById('label-50').innerText = (dose * 0.5).toFixed(1) + " Gy";
             }
 
+            // Handles Rx Dose input changes and dynamically scales existing times without full re-optimization
             onRxDoseChange(val) {
                 const newRx = parseFloat(val);
                 // Prevent NaN, 0, or unchanged values from messing up scaling mid-typing
                 if (isNaN(newRx) || newRx <= 0 || newRx === this.lastRxDose) return;
                 
-                // Scale existing times WITHOUT re-optimizing
+                // Scale existing times linearly (dose is directly proportional to time)
                 const ratio = newRx / this.lastRxDose;
                 this.dwells.forEach(dw => {
                     if (dw.active) dw.time = parseFloat((dw.time * ratio).toFixed(2));
@@ -529,9 +631,10 @@
                 btn.disabled = false;
                 btn.innerText = "Start Deep Optimization";
                 
-                this.calculateDosesOnly();
+                this.calculateDosesOnly(); // Fast update of visuals
             }
 
+            // Handle canvas and sub-canvas resizing
             resize() {
                 const rect = this.canvas.parentElement.getBoundingClientRect();
                 this.canvas.width = rect.width || window.innerWidth - 320;
@@ -541,6 +644,7 @@
                 this.mseCanvas.width = 280; this.mseCanvas.height = 80;
             }
 
+            // Gathers all current user inputs from the DOM
             getInputs() {
                 let depthVal = parseFloat(document.getElementById('rxDepth').value);
                 let safeDepth = isNaN(depthVal) ? 0.0 : depthVal;
@@ -559,6 +663,7 @@
                 };
             }
 
+            // Triggers a full optimization run from scratch
             promptOptimization() {
                 this.isOptimizing = false;
                 this.calculate();
@@ -574,7 +679,7 @@
             
             onStepSizeChange() { 
                 let el = document.getElementById('stepSize');
-                if (parseFloat(el.value) < 0.2) el.value = 0.2;
+                if (parseFloat(el.value) < 0.2) el.value = 0.2; // Prevent infinite loops or extreme dense spacing
                 
                 this.isOptimizing = false;
                 this.generateDwellPositions(false); 
@@ -588,16 +693,20 @@
                 this.calculate();
             }
 
+            // Generates the initial array of dwell positions based on step size and geometry
             generateDwellPositions(keepOverrides = true) {
-                const p = this.getInputs(), startZ = 0.65;
-                const maxRange = p.txLength + Math.max(2.5, p.dwellBeyond + 1.0); // Safely expand generation range if needed
+                const p = this.getInputs(), startZ = 0.65; // Base dead space inside applicator
+                const maxRange = p.txLength + Math.max(2.5, p.dwellBeyond + 1.0); 
                 const prevStates = {};
+                
+                // Preserve manually checked/unchecked states if requested
                 if (keepOverrides && this.dwells && this.dwells.length > 0) {
                     this.dwells.forEach(d => prevStates[d.z.toFixed(2)] = d.active);
                 }
                 
                 const newDwells = [];
                 for (let z = startZ; z <= maxRange; z += p.stepSize) {
+                    // Match Varian 1300mm standard wire index (124.9 is typically apex)
                     const pos = 124.9 - (z - startZ), roundedPos = Math.round(pos * 100) / 100;
                     const zKey = z.toFixed(2);
                     
@@ -619,14 +728,16 @@
                 this.updateDwellTable();
             }
 
+            // Toggles a single dwell position ON or OFF from the left sidebar
             toggleDwell(index) { 
                 this.isOptimizing = false;
                 this.dwells[index].active = !this.dwells[index].active; 
-                this.updateBeyondTxFromDwells(); // Dynamically update Beyond Tx Input
+                this.updateBeyondTxFromDwells(); 
                 this.buildGeometry();
                 this.calculate();
             }
 
+            // User manually types a time value
             handleManualTime(index, value) {
                 this.isOptimizing = false; 
                 const time = parseFloat(value);
@@ -636,16 +747,19 @@
                 }
             }
 
+            // User scrolls mouse wheel over a time value
             handleWheelTime(index, event, inputEl) {
                 this.isOptimizing = false;
                 event.preventDefault();
-                const delta = event.deltaY < 0 ? 0.01 : -0.01, currentTime = parseFloat(this.dwells[index].time) || 0;
+                const delta = event.deltaY < 0 ? 0.01 : -0.01;
+                const currentTime = parseFloat(this.dwells[index].time) || 0;
                 const newTime = Math.max(0, currentTime + delta);
                 this.dwells[index].time = parseFloat(newTime.toFixed(2));
                 inputEl.value = this.dwells[index].time.toFixed(2);
                 this.calculateDosesOnly();
             }
 
+            // Re-renders the HTML table of dwells on the left
             updateDwellTable() {
                 const tbody = document.getElementById('dwellResults');
                 tbody.innerHTML = this.dwells.map((dw, i) => `
@@ -660,13 +774,17 @@
                 `).join('');
             }
 
+            // Calculates the mathematical X coordinate (radius) of the cylinder surface at a specific Z height
             getRxX(z, radius, rxDepth) {
                 const rxRad = radius + rxDepth;
-                if (z >= radius) return rxRad; 
+                if (z >= radius) return rxRad; // Straight part of cylinder
+                
+                // Hemispherical dome part calculation
                 const val = rxRad*rxRad - Math.pow(z - radius, 2); 
                 return val > 0 ? Math.sqrt(val) : 0;
             }
 
+            // Sets up the point targets (optPoints, surfacePoints, hardPoints) before optimization starts
             buildGeometry() {
                 const p = this.getInputs(), radius = p.cylDiam / 2, rxRadius = radius + p.rxDepth;
                 const activeDwells = this.dwells.filter(d => d.active);
@@ -676,11 +794,13 @@
                 const zRx = p.txLength / 2.0;
                 const zInf = p.txLength;
                 
+                // 1. Hard Points: Must exactly match Rx Dose
                 this.hardPoints = [
                     { x: this.getRxX(zRx, radius, p.rxDepth), z: zRx, label: 'Rx Point (Mid)' },
                     { x: this.getRxX(zInf, radius, p.rxDepth), z: zInf, label: 'Inf Point (End)' }
                 ];
                 
+                // 2. Dome Optimization Points
                 const angleThresholdRad = (p.domeAngle * Math.PI) / 180;
                 const angleSteps = Math.max(10, p.domeAngle); 
                 
@@ -693,13 +813,16 @@
                     optPoints.push({ x: rxRadius, z: radius, label: '100%' });
                 }
 
-                // Rx Point 및 Inf Point와 완벽하게 겹치도록(Overlap) Z 좌표 강제 삽입 및 정렬
+                // 3. Side Optimization Points: Ensure perfect vertical alignment with Hard Points
                 let sideZ = [];
                 for (let z = radius + 0.05; z <= p.txLength; z += 0.1) sideZ.push(z);
+                
+                // Forcing exact Rx and Inf Z-coordinates into the side list to prevent mismatch
                 sideZ.push(zRx);
                 sideZ.push(zInf);
                 sideZ.sort((a, b) => a - b);
                 
+                // Remove duplicates
                 let uniqueSideZ = [];
                 sideZ.forEach(z => {
                     if (uniqueSideZ.length === 0 || Math.abs(z - uniqueSideZ[uniqueSideZ.length - 1]) > 0.01) {
@@ -713,6 +836,7 @@
                     }
                 });
 
+                // 4. Surface Constraints (e.g. Max 200% on applicator surface)
                 for (let i = 18; i >= 0; i--) {
                     const angle = (Math.PI / 2) * (i / 18);
                     surfacePoints.push({ x: radius * Math.sin(angle), z: radius - radius * Math.cos(angle), label: '200%' });
@@ -721,41 +845,43 @@
                 this.optPoints = optPoints;
                 this.surfacePoints = surfacePoints;
 
+                // 5. Pre-calculate Dose-Rate Matrices
+                // This converts the problem into simple matrix multiplication (Dose = M * Times)
+                // which speeds up the 150,000 optimization iterations massively.
                 if (activeDwells.length > 0) {
                     this.M_target = optPoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
                     this.M_const = surfacePoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
                     this.M_hard = this.hardPoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
+                    
+                    // Reset Adam optimizer variables
                     this.adam_m = new Array(activeDwells.length).fill(0);
                     this.adam_v = new Array(activeDwells.length).fill(0);
                     this.adam_t = 0;
                 }
             }
 
+            // Performs a quick calculation of just the point doses (e.g., when a user scrolls a time value)
             calculateDosesOnly() {
                 const p = this.getInputs(), activeDwells = this.dwells.filter(d => d.active);
                 if (activeDwells.length === 0) return;
                 
-                if(this.optPoints) {
-                    this.optPoints.forEach(pt => {
-                        let d = 0; activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk));
+                const calcPointSet = (pts) => {
+                    if(!pts) return;
+                    pts.forEach(pt => {
+                        let d = 0; 
+                        activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk));
                         pt.currentDose = d;
                     });
                 }
-                if(this.surfacePoints) {
-                    this.surfacePoints.forEach(pt => {
-                        let d = 0; activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk));
-                        pt.currentDose = d;
-                    });
-                }
-                if(this.hardPoints) {
-                    this.hardPoints.forEach(pt => {
-                        let d = 0; activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk));
-                        pt.currentDose = d;
-                    });
-                }
-                this.computeIsodose();
+                
+                calcPointSet(this.optPoints);
+                calcPointSet(this.surfacePoints);
+                calcPointSet(this.hardPoints);
+                
+                this.computeIsodose(); // Re-render the colored lines
             }
 
+            // Initiates the optimization process
             calculate() {
                 if (this.isOptimizing) return; 
                 
@@ -769,7 +895,8 @@
                 const activeDwells = this.dwells.filter(d => d.active);
                 const warningEl = document.getElementById('coverage-warning');
                 
-                // --- Warning Logic: physically unachievable dose check ---
+                // --- Warning Logic: Physically unachievable dose check ---
+                // If dwells do not cover the whole treatment length, the end point cannot reach the dose.
                 if (activeDwells.length > 0) {
                     const maxZ = Math.max(...activeDwells.map(d => d.z));
                     if (maxZ < p.txLength - 0.2 || activeDwells.length < 2) {
@@ -783,6 +910,7 @@
                     return; 
                 }
 
+                // Reset times to a starting guess of 10s
                 activeDwells.forEach(d => { if(d.time === 0) d.time = 10.0; });
                 this.mseHistory = [];
                 
@@ -791,39 +919,49 @@
                 this.isOptimizing = true;
                 this.currentIter = 0;
                 
+                // Start non-blocking loop so UI doesn't freeze
                 requestAnimationFrame(() => this.runOptimizationLoop());
             }
 
+            // The core mathematical optimization engine
             runOptimizationLoop() {
                 if (!this.isOptimizing) return;
                 
                 const p = this.getInputs();
                 const activeDwells = this.dwells.filter(d => d.active);
                 const limitDose = p.rxDose * 2.0, targetDose = p.rxDose;
+                
+                // Adam optimizer hyper-parameters
                 const lr = 0.1, beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
                 
                 const effectiveSmooth = p.smoothWeight * 0.02; 
 
+                // We run 1500 steps per frame to balance speed and UI responsiveness
                 for (let step = 0; step < 1500; step++) {
                     this.currentIter++;
                     this.adam_t++;
+                    
+                    // Decaying randomness to escape local minima early on
                     const decay = Math.max(0, 1 - (this.currentIter / this.maxIter));
                     let currentMSE = 0;
 
+                    // 1. Evaluate current dose at all Opt Points
                     let targetDoses = new Float64Array(this.optPoints.length);
                     for (let i = 0; i < this.optPoints.length; i++) {
                         let d = 0; for(let j=0; j<activeDwells.length; j++) d += activeDwells[j].time * this.M_target[i][j];
                         targetDoses[i] = d; this.optPoints[i].currentDose = d;
-                        currentMSE += Math.pow(d/targetDose - 1, 2);
+                        currentMSE += Math.pow(d/targetDose - 1, 2); // Calculate Mean Squared Error
                     }
                     currentMSE /= this.optPoints.length;
 
+                    // Evaluate constraints
                     let constDoses = new Float64Array(this.surfacePoints.length);
                     for (let k = 0; k < this.surfacePoints.length; k++) {
                         let d = 0; for(let j=0; j<activeDwells.length; j++) d += activeDwells[j].time * this.M_const[k][j];
                         constDoses[k] = d; this.surfacePoints[k].currentDose = d;
                     }
 
+                    // Evaluate hard anchor points
                     let hardDoses = new Float64Array(this.hardPoints.length);
                     for (let h = 0; h < this.hardPoints.length; h++) {
                         let d = 0; for(let j=0; j<activeDwells.length; j++) d += activeDwells[j].time * this.M_hard[h][j];
@@ -832,36 +970,46 @@
 
                     this.lastMSE = currentMSE;
 
+                    // 2. Calculate Gradients for Adam Optimizer
                     for (let j = 0; j < activeDwells.length; j++) {
                         let grad = 0;
+                        
+                        // Error gradient from main target points
                         for (let i = 0; i < this.optPoints.length; i++) {
                             grad += 2 * (targetDoses[i] / targetDose - 1) * (this.M_target[i][j] / targetDose) / this.optPoints.length;
                         }
                         
+                        // Penalty gradient from exceeding max constraints (e.g. >200%)
                         for (let k = 0; k < this.surfacePoints.length; k++) {
                             let over = constDoses[k] - limitDose;
                             if (over > 0) grad += 100.0 * 2 * (over / limitDose) * (this.M_const[k][j] / limitDose) / this.surfacePoints.length;
                         }
 
+                        // Heavy penalty gradient for missing hard anchors
                         for (let h = 0; h < this.hardPoints.length; h++) {
                             grad += 200.0 * 2 * (hardDoses[h] / targetDose - 1) * (this.M_hard[h][j] / targetDose) / this.hardPoints.length;
                         }
                         
-                        // Heavily penalize asymmetry to ensure Rx and Inf match perfectly
+                        // Extremely heavy penalty for asymmetry between Rx and Inf points
+                        // Ensures they match each other perfectly
                         let hardDiff = (hardDoses[0] - hardDoses[1]) / targetDose;
                         grad += 5000.0 * 2 * hardDiff * ((this.M_hard[0][j] - this.M_hard[1][j]) / targetDose);
 
+                        // Inject noise initially to prevent getting stuck
                         if (this.currentIter < this.maxIter * 0.3) grad += (Math.random() - 0.5) * 0.05 * decay;
 
+                        // 3. Adam Update Formula
                         this.adam_m[j] = beta1 * this.adam_m[j] + (1 - beta1) * grad;
                         this.adam_v[j] = beta2 * this.adam_v[j] + (1 - beta2) * (grad * grad);
                         let m_hat = this.adam_m[j] / (1 - Math.pow(beta1, this.adam_t));
                         let v_hat = this.adam_v[j] / (1 - Math.pow(beta2, this.adam_t));
                         
+                        // Apply update
                         activeDwells[j].time -= lr * m_hat / (Math.sqrt(v_hat) + eps);
-                        if (activeDwells[j].time < 0) activeDwells[j].time = 0;
+                        if (activeDwells[j].time < 0) activeDwells[j].time = 0; // Time cannot be negative
                     }
 
+                    // Apply physical smoothing to prevent jagged time profiles
                     if (activeDwells.length > 2 && effectiveSmooth > 0) {
                         const temp = activeDwells.map(d => d.time);
                         for(let j = 1; j < activeDwells.length - 1; j++) {
@@ -874,6 +1022,7 @@
 
                 this.mseHistory.push(this.lastMSE);
 
+                // Update UI visually
                 document.getElementById('iter-counter').innerText = `Iteration: ${this.currentIter} / ${this.maxIter}`;
                 document.getElementById('mse-display').innerText = `MSE: ${this.lastMSE.toFixed(7)}`;
                 
@@ -881,9 +1030,11 @@
                 this.updateDwellTable();
                 this.computeIsodose();
 
+                // Check termination conditions
                 if (this.currentIter >= this.maxIter || this.lastMSE < this.targetMSE) {
                     
                     // --- Final Exact Renormalization via TG-43 ---
+                    // Scale all times slightly to guarantee the Rx point is EXACTLY the target dose
                     let finalRxDose = 0;
                     activeDwells.forEach(dw => {
                         finalRxDose += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, this.hardPoints[0].x, this.hardPoints[0].z, p.Sk);
@@ -891,10 +1042,12 @@
                     
                     let normFactor = targetDose / finalRxDose;
                     activeDwells.forEach(dw => {
-                        dw.time = Math.max(0, parseFloat((dw.time * normFactor).toFixed(2)));
+                        dw.time = Math.max(0, parseFloat((dw.time * normFactor).toFixed(2))); // Pre-round to hardware limit (0.01s)
                     });
 
                     // --- 0.01s Precision Discrete Fine-Tuning ---
+                    // Because hardware can only deliver 0.01s increments, rounding causes small dose errors.
+                    // This logic selectively adds/subtracts 0.01s to specific dwells to minimize that final error.
                     let calcCurrentDoses = () => {
                         let doseRx = 0, doseInf = 0;
                         activeDwells.forEach(dw => { 
@@ -908,7 +1061,6 @@
                     let maxErr = () => Math.max(Math.abs(targetDose - cur.rx), Math.abs(targetDose - cur.inf));
                     let loopCount = 0;
                     
-                    // Try ±0.01s adjustments to minimize residual round-off error symmetrically
                     while (maxErr() > 0.0005 && loopCount < 100) {
                         let bestJ = -1;
                         let bestStep = 0;
@@ -919,6 +1071,7 @@
                             let rateRx = TG43.calculateDoseRate(0, activeDwells[j].z, activeDwells[j].orX, activeDwells[j].orZ, this.hardPoints[0].x, this.hardPoints[0].z, p.Sk);
                             let rateInf = TG43.calculateDoseRate(0, activeDwells[j].z, activeDwells[j].orX, activeDwells[j].orZ, this.hardPoints[1].x, this.hardPoints[1].z, p.Sk);
                             
+                            // Test adding/subtracting 0.01s
                             for (let step of [0.01, -0.01]) {
                                 if (activeDwells[j].time + step < 0) continue;
                                 let testRx = cur.rx + rateRx * step;
@@ -938,7 +1091,7 @@
                             activeDwells[bestJ].time = parseFloat(activeDwells[bestJ].time.toFixed(2));
                             cur = calcCurrentDoses();
                         } else {
-                            break; // No single 0.01s step improves both points further
+                            break; // No single 0.01s step improves both points further, finish.
                         }
                         loopCount++;
                     }
@@ -952,10 +1105,12 @@
                     
                     this.updateDwellTable();
                 } else {
+                    // Continue loop if not done
                     requestAnimationFrame(() => this.runOptimizationLoop());
                 }
             }
 
+            // Calculates dose grid for drawing isodose lines using Marching Squares
             computeIsodose() {
                 const p = this.getInputs(), res = 0.15, grid = [];
                 
@@ -984,6 +1139,7 @@
                 this.gridConfig = { res, startX, startZ };
             }
 
+            // Draws the debug panels on the right side
             drawDebugCharts() {
                 if (!this.showDebug) return;
                 const p = this.getInputs();
@@ -996,8 +1152,8 @@
 
                 const pts = this.optPoints; 
                 
-                // --- Dynamic Y-Axis Scaling Logic ---
-                let maxDev = 0.2; // 기본 최소 +-20% 여백
+                // --- Dynamic Y-Axis Scaling Logic for Dose Profiler ---
+                let maxDev = 0.2; // Default +/- 20% bounds
                 if (pts && pts.length >= 2) {
                     let minR = 1.0, maxR = 1.0;
                     pts.forEach(pt => {
@@ -1005,9 +1161,8 @@
                         if (r < minR) minR = r;
                         if (r > maxR) maxR = r;
                     });
-                    // 100%(1.0) 기준으로 위아래 대칭을 맞추기 위해 최대 편차(Deviation)를 구함
                     maxDev = Math.max(Math.abs(1.0 - minR), Math.abs(maxR - 1.0));
-                    // 줌인이 너무 심하게 되거나 너무 안되는 것을 방지 (최소 5% 최대 50%)
+                    // Clamp zooming to prevent extreme jumpiness (min 5%, max 50%)
                     maxDev = Math.max(0.05, Math.min(0.5, maxDev * 1.2)); 
                 }
                 
@@ -1047,6 +1202,7 @@
                     ctx1.fillText(label, leftMargin - 4, y);
                 });
                 
+                // Plot actual dose profile points
                 if (pts && pts.length >= 2) {
                     ctx1.beginPath(); ctx1.strokeStyle = '#166534'; ctx1.lineWidth = 2;
                     pts.forEach((pt, i) => {
@@ -1065,6 +1221,7 @@
                     });
                 }
 
+                // Plot MSE history chart
                 const ctx2 = this.mseCtx, w2 = this.mseCanvas.width, h2 = this.mseCanvas.height;
                 ctx2.clearRect(0, 0, w2, h2);
                 
@@ -1091,6 +1248,7 @@
                 }
             }
 
+            // Main rendering loop for drawing the 2D visualization
             animate() {
                 try {
                     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -1098,6 +1256,7 @@
                     const step = this.zoom, cw = this.canvas.width, ch = this.canvas.height;
                     const p = this.getInputs(), radius = p.cylDiam / 2;
 
+                    // Draw background grid
                     this.ctx.setLineDash([2, 4]); this.ctx.strokeStyle = '#94a3b8';
                     for (let x = this.offset.x % step; x < cw; x += step) { this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, ch); this.ctx.stroke(); }
                     for (let y = this.offset.y % step; y < ch; y += step) { this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(cw, y); this.ctx.stroke(); }
@@ -1108,10 +1267,11 @@
                         this.ctx.translate(this.offset.x, this.offset.y);
                         const r = radius * this.zoom;
                         
+                        // Draw Cylinder shape
                         this.ctx.beginPath();
-                        this.ctx.arc(0, radius*this.zoom, r, Math.PI, 0);
-                        this.ctx.lineTo(r, (p.txLength+2)*this.zoom);
-                        this.ctx.lineTo(-r, (p.txLength+2)*this.zoom);
+                        this.ctx.arc(0, radius*this.zoom, r, Math.PI, 0); // Dome apex
+                        this.ctx.lineTo(r, (p.txLength+2)*this.zoom); // Right side
+                        this.ctx.lineTo(-r, (p.txLength+2)*this.zoom); // Left side
                         this.ctx.closePath();
                         
                         this.ctx.fillStyle = 'rgba(203, 213, 225, 0.35)'; 
@@ -1120,10 +1280,12 @@
                         this.ctx.strokeStyle = '#64748b'; this.ctx.lineWidth = 2;
                         this.ctx.stroke();
 
+                        // Draw reference planes (Z=0 and Z=TxLength)
                         this.ctx.strokeStyle = '#f97316'; this.ctx.lineWidth = 2.5;
                         this.ctx.beginPath(); this.ctx.moveTo(-r*2.4, 0); this.ctx.lineTo(r*2.2, 0); this.ctx.stroke();
                         this.ctx.beginPath(); this.ctx.moveTo(-r*2.4, p.txLength * this.zoom); this.ctx.lineTo(r*2.2, p.txLength * this.zoom); this.ctx.stroke();
                         
+                        // Draw Treatment Length Dimension Line
                         const dimLineX = -r * 2.1;
                         const topZ = 0;
                         const bottomZ = p.txLength * this.zoom;
@@ -1137,6 +1299,7 @@
                         this.ctx.lineTo(dimLineX, bottomZ);
                         this.ctx.stroke();
 
+                        // Arrows for dimension line
                         this.ctx.beginPath();
                         this.ctx.moveTo(dimLineX - 4, topZ + 8);
                         this.ctx.lineTo(dimLineX, topZ);
@@ -1149,6 +1312,7 @@
                         this.ctx.lineTo(dimLineX + 4, bottomZ - 8);
                         this.ctx.stroke();
 
+                        // Dimension Text
                         this.ctx.save();
                         this.ctx.translate(dimLineX, midZ);
                         this.ctx.rotate(-Math.PI / 2);
@@ -1171,19 +1335,28 @@
                         this.ctx.fillText(dimText, 0, 1);
                         this.ctx.restore();
 
+                        // Draw Isodose lines using Marching Squares Algorithm
                         if (this.isodoseGrid && this.isodoseGrid.length > 1) {
                             const lvls = [{v: p.rxDose*2, c: '#ef4444'}, {v: p.rxDose*1.5, c: '#f97316'}, {v: p.rxDose, c: '#22c55e'}, {v: p.rxDose*0.5, c: '#3b82f6'}];
                             const { res, startX, startZ } = this.gridConfig;
+                            
                             lvls.forEach(lvl => {
                                 this.ctx.strokeStyle = lvl.c; this.ctx.lineWidth = 2.5; this.ctx.beginPath();
                                 for (let zi = 0; zi < this.isodoseGrid.length-1; zi++) {
                                     for (let xi = 0; xi < this.isodoseGrid[zi].length-1; xi++) {
                                         const v = [this.isodoseGrid[zi][xi], this.isodoseGrid[zi][xi+1], this.isodoseGrid[zi+1][xi+1], this.isodoseGrid[zi+1][xi]];
-                                        let cfg = 0; if (v[0]>=lvl.v) cfg|=8; if (v[1]>=lvl.v) cfg|=4; if (v[2]>=lvl.v) cfg|=2; if (v[3]>=lvl.v) cfg|=1;
-                                        if (cfg===0 || cfg===15) continue;
+                                        let cfg = 0; 
+                                        if (v[0]>=lvl.v) cfg|=8; if (v[1]>=lvl.v) cfg|=4; if (v[2]>=lvl.v) cfg|=2; if (v[3]>=lvl.v) cfg|=1;
+                                        
+                                        if (cfg===0 || cfg===15) continue; // Cell is either entirely inside or entirely outside the isodose contour
+                                        
                                         const wz = startZ + zi * res, wx = startX + xi * res;
+                                        // Linear interpolation to find exact crossing points
                                         const pPts = [{x: wx + res*((lvl.v-v[0])/(v[1]-v[0])), z: wz}, {x: wx+res, z: wz + res*((lvl.v-v[1])/(v[2]-v[1]))}, {x: wx + res*((lvl.v-v[3])/(v[2]-v[3])), z: wz+res}, {x: wx, z: wz + res*((lvl.v-v[0])/(v[3]-v[0]))}];
+                                        
                                         const draw = (a, b) => { this.ctx.moveTo(a.x*this.zoom, a.z*this.zoom); this.ctx.lineTo(b.x*this.zoom, b.z*this.zoom); };
+                                        
+                                        // Match config cases to draw appropriate line segments
                                         if (cfg===1 || cfg===14) draw(pPts[3], pPts[2]); else if (cfg===2 || cfg===13) draw(pPts[2], pPts[1]); else if (cfg===3 || cfg===12) draw(pPts[3], pPts[1]); else if (cfg===4 || cfg===11) draw(pPts[0], pPts[1]); else if (cfg===5) { draw(pPts[3], pPts[0]); draw(pPts[2], pPts[1]); } else if (cfg===6 || cfg===9) draw(pPts[0], pPts[2]); else if (cfg===7 || cfg===8) draw(pPts[3], pPts[0]); else if (cfg===10) { draw(pPts[0], pPts[1]); draw(pPts[3], pPts[2]); }
                                     }
                                 }
@@ -1191,6 +1364,7 @@
                             });
                         }
 
+                        // Draw Hard Anchors and their exact dose tooltips
                         if (this.hardPoints) {
                             this.hardPoints.forEach(pt => {
                                 this.ctx.fillStyle = '#a855f7'; 
@@ -1210,10 +1384,12 @@
                             });
                         }
 
+                        // Draw other optimization points (Rx line and Constraint points)
                         if (this.showDebug) {
                             if (this.optPoints) this.optPoints.forEach(pt => { this.ctx.fillStyle='#22c55e'; this.ctx.beginPath(); this.ctx.arc(-pt.x*this.zoom, pt.z*this.zoom, 4, 0, 7); this.ctx.fill(); });
                             if (this.surfacePoints) this.surfacePoints.forEach(pt => { this.ctx.fillStyle='#ef4444'; this.ctx.beginPath(); this.ctx.arc(-pt.x*this.zoom, pt.z*this.zoom, 3.5, 0, 7); this.ctx.fill(); });
                             
+                            // Show tooltip if hovered over a point
                             if (this.hoveredPoint) {
                                 const hpt = this.hoveredPoint; this.ctx.fillStyle = 'rgba(15, 23, 42, 0.95)'; this.ctx.beginPath();
                                 this.ctx.rect(-hpt.x*this.zoom-125, hpt.z*this.zoom-20, 110, 35); this.ctx.fill();
@@ -1224,6 +1400,7 @@
                             }
                         }
 
+                        // Draw active dwell positions (Ir-192 sources)
                         if (this.dwells) {
                             this.dwells.forEach(dw => { if (dw.active) { this.ctx.fillStyle = '#f59e0b'; this.ctx.fillRect(-3, (dw.z-0.175)*this.zoom, 6, 0.35*this.zoom); this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(0, dw.z*this.zoom, 1, 0, 7); this.ctx.fill(); } });
                         }
@@ -1236,6 +1413,8 @@
                 requestAnimationFrame(() => this.animate());
             }
 
+            // Generates a separate pop-up window containing detailed TG-43 physics parameters
+            // This allows the physicist to verify how the algorithm calculated the dose for debugging purposes.
             openTG43Detail() {
                 const p = this.getInputs();
                 const activeDwells = this.dwells.filter(d => d.active);
@@ -1252,7 +1431,7 @@
                     th, td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
                     th { background: #f8fafc; font-weight: 700; color: #475569; text-align: center; border-bottom: 2px solid #e2e8f0; }
                     td:first-child, th:first-child { text-align: left; }
-                    .dwell-col { text-align: center; font-weight: 500; }
+                    .dwell-col { text-align: center !important; font-weight: 500; }
                     .total-dose { font-weight: 800; color: #2563eb; background: #eff6ff; font-size: 14px; }
                     .bg-slate-50 { background-color: #f8fafc; font-weight: 700; color: #334155; }
                     tr:hover { background-color: #f8fafc; }
@@ -1292,7 +1471,7 @@
                         const r = Math.sqrt(dx*dx + dz*dz);
                         
                         let dDose = 0, thetaDeg = 0, beta = 0, Geom = 0, g = 0, F = 0;
-                        const G_ref = 0.989915; // Hardcoded in the main equation
+                        const G_ref = 0.989915; // Hardcoded reference geometry factor
 
                         if (r >= 0.05) {
                             const cosTheta = (dx * 0 + dz * -1) / r; // dwOrX=0, dwOrZ=-1
@@ -1311,7 +1490,7 @@
                             F = TG43.interpolate2D(r, thetaDeg);
                             Geom = TG43.G(r, thetaRad);
                             
-                            // 메인 캔버스와 동일하게 1.1165 상수 사용
+                            // Uses exactly 1.1165 for Dose Rate Constant just like the main calculateDoseRate function
                             dDose = (p.Sk * 1.1165 * (Geom / G_ref) * g * F / 100) * (dw.time / 3600);
                             totalDose += dDose;
                         }
@@ -1340,11 +1519,14 @@
 
                 html += `</tbody></table></div></body></html>`;
 
+                // Open the result in a new browser tab
                 const win = window.open('', '_blank');
                 win.document.write(html);
                 win.document.close();
             }
         }
+        
+        // Boot the application
         const app = new App();
     </script>
 </body>
