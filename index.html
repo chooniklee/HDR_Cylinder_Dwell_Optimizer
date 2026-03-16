@@ -70,6 +70,11 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Hide number input arrows for clean coordinate fields */
+        .no-spin::-webkit-inner-spin-button, 
+        .no-spin::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .no-spin { -moz-appearance: textfield; }
     </style>
 </head>
 <body class="h-screen flex flex-col bg-slate-100 p-3 gap-3">
@@ -92,8 +97,70 @@
         
         <!-- Left Sidebar: Inputs & Dwell Times -->
         <aside class="w-[320px] border border-slate-200 bg-white flex flex-col z-20 shadow-sm rounded-xl relative">
-            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <div class="grid grid-cols-3 bg-slate-50 border-b border-slate-200 shrink-0 rounded-t-xl overflow-hidden">
+                <button id="tab-btn-standard" class="py-2.5 text-[11px] font-bold uppercase text-blue-600 border-b-2 border-blue-600 bg-white" onclick="app.setTab('standard')">Standard</button>
+                <button id="tab-btn-tps1" class="py-2.5 text-[11px] font-bold uppercase text-slate-400 border-b-2 border-transparent hover:text-slate-600" onclick="app.setTab('tps1')">TPS #1</button>
+                <button id="tab-btn-tps2" class="py-2.5 text-[11px] font-bold uppercase text-slate-400 border-b-2 border-transparent hover:text-slate-600" onclick="app.setTab('tps2')">TPS #2</button>
+            </div>
+            
+            <!-- TPS #1 Entry Area (Visible only in TPS #1 tab before importing data) -->
+            <div id="tps1-entry-area" class="flex-1 overflow-y-auto p-4 space-y-4 hidden bg-slate-50">
+                <h3 class="text-[12px] font-bold text-slate-700 border-b pb-1">Applicator Coordinates</h3>
+                <div class="grid grid-cols-3 gap-2">
+                    <span class="col-span-3 text-[10px] font-bold text-slate-500">Geometry Point #1 (cm)</span>
+                    <input type="number" id="tps-a1-x" placeholder="X" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    <input type="number" id="tps-a1-y" placeholder="Y" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    <input type="number" id="tps-a1-z" placeholder="Z" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    
+                    <span class="col-span-3 text-[10px] font-bold text-slate-500 mt-1">Geometry Point #2 (cm)</span>
+                    <input type="number" id="tps-a2-x" placeholder="X" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    <input type="number" id="tps-a2-y" placeholder="Y" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    <input type="number" id="tps-a2-z" placeholder="Z" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                </div>
+
+                <h3 class="text-[12px] font-bold text-slate-700 border-b pb-1 mt-4">Reference Points</h3>
+                <div class="grid grid-cols-3 gap-2">
+                    <span class="col-span-3 text-[10px] font-bold text-slate-500">Rx Point (cm)</span>
+                    <input type="number" id="tps-rx-x" placeholder="X" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    <input type="number" id="tps-rx-y" placeholder="Y" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    <input type="number" id="tps-rx-z" placeholder="Z" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    
+                    <span class="col-span-3 text-[10px] font-bold text-slate-500 mt-1">Inf Point (cm)</span>
+                    <input type="number" id="tps-inf-x" placeholder="X" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    <input type="number" id="tps-inf-y" placeholder="Y" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                    <input type="number" id="tps-inf-z" placeholder="Z" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
+                </div>
                 
+                <button class="btn-optimize mt-2" onclick="app.importTPSEntry()">Transform & Run Optimizer</button>
+                <div class="text-[10px] text-slate-500 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <strong>Note:</strong> Geometry Point #1 is translated to (0,0,0.65). Rx and Inf are transformed relative to the vector from Point #1 to Point #2.
+                </div>
+            </div>
+
+            <!-- TPS #2 Paste Area (Visible only in TPS #2 tab before importing data) -->
+            <div id="tps2-paste-area" class="flex-1 overflow-y-auto p-4 space-y-4 hidden bg-slate-50">
+                <div class="space-y-2">
+                    <label class="input-label text-slate-600">Paste TPS Parameters Here</label>
+                    <textarea id="tps2-input" class="w-full h-56 p-2 text-[10px] font-mono text-slate-600 border border-slate-300 rounded-lg shadow-inner focus:outline-none focus:border-blue-500 resize-none" placeholder="Cylinder_Diameter_cm: 3.00&#10;Treatment_Length_cm: 4.00&#10;Prescription_Depth: Surface (0.0 cm)&#10;Dwell_Step_Size_cm: 0.50&#10;Rx_Aligned_xyz_cm: -1.40, 0.55, 1.37&#10;Inf_Aligned_xyz_cm: -1.40, 0.55, 3.36"></textarea>
+                </div>
+                <button class="btn-optimize" onclick="app.parseTPSData2()">Import & Run Optimizer</button>
+                <div class="text-[10px] text-slate-500 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <strong>Note:</strong> Importing TPS data switches the engine to 3D mode. Z coordinates will be adjusted automatically (+0.65cm to match the first dwell position).
+                </div>
+            </div>
+
+            <!-- Shared Parameters Area (Visible in Standard mode OR TPS mode after importing) -->
+            <div id="shared-params-area" class="flex-1 overflow-y-auto p-4 space-y-4 block">
+                
+                <!-- Active TPS Badge (Hidden by default) -->
+                <div id="tps-active-badge" class="hidden items-center justify-between bg-indigo-50 border border-indigo-200 p-2 rounded-lg mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                        <span class="text-[11px] font-bold text-indigo-700">TPS 3D Geometry Active</span>
+                    </div>
+                    <button onclick="app.clearTPSEntry()" class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 bg-white px-2 py-0.5 rounded border border-indigo-200 shadow-sm transition-all">Clear</button>
+                </div>
+
                 <!-- Inputs Section -->
                 <section class="space-y-3">
                     <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2">
@@ -359,15 +426,15 @@
             },
 
             // Main function to calculate Dose Rate (Gy/hr) at a specific point from a single dwell
-            calculateDoseRate(dwX, dwZ, dwOrX, dwOrZ, ptX, ptZ, Sk) {
-                const dx = ptX - dwX, dz = ptZ - dwZ;
-                const r = Math.sqrt(dx*dx + dz*dz); 
+            calculateDoseRate(dwX, dwY, dwZ, dwOrX, dwOrY, dwOrZ, ptX, ptY, ptZ, Sk) {
+                const dx = ptX - dwX, dy = ptY - dwY, dz = ptZ - dwZ;
+                const r = Math.sqrt(dx*dx + dy*dy + dz*dz); 
                 
                 // If point is too close to source (< 0.5mm), return Infinity to push isodose lines outward smoothly
                 if (r < 0.05) return Infinity; 
                 
-                // Calculate angle from the source longitudinal axis
-                const cosTheta = (dx * dwOrX + dz * dwOrZ) / r;
+                // Calculate angle from the source longitudinal axis in 3D
+                const cosTheta = (dx * dwOrX + dy * dwOrY + dz * dwOrZ) / r;
                 const thetaRad = Math.acos(Math.max(-1, Math.min(1, cosTheta)));
                 const thetaDeg = thetaRad * 180 / Math.PI;
                 
@@ -436,6 +503,10 @@
                 this.lastMouse = { x: 0, y: 0 };
                 this.hoveredPoint = null;
 
+                this.activeTab = 'standard';
+                this.importedRx = null;
+                this.importedInf = null;
+
                 // Initialize environment
                 this.initEventListeners();
                 this.resize();
@@ -477,6 +548,213 @@
                 if (callbackName && typeof this[callbackName] === 'function') {
                     this[callbackName](inputEl.value);
                 }
+            }
+
+            // Checks if we are currently operating in 3D TPS Mode
+            isTPSMode() {
+                return (this.activeTab === 'tps1' || this.activeTab === 'tps2') && this.importedRx && this.importedInf;
+            }
+
+            // Handles tab switching and UI state
+            setTab(tab) {
+                this.activeTab = tab;
+                const btnStd = document.getElementById('tab-btn-standard');
+                const btnTps1 = document.getElementById('tab-btn-tps1');
+                const btnTps2 = document.getElementById('tab-btn-tps2');
+                const entryArea1 = document.getElementById('tps1-entry-area');
+                const entryArea2 = document.getElementById('tps2-paste-area');
+                const paramsArea = document.getElementById('shared-params-area');
+                const badge = document.getElementById('tps-active-badge');
+
+                // Reset button styles
+                [btnStd, btnTps1, btnTps2].forEach(btn => {
+                    if (btn) btn.className = "py-2.5 text-[11px] font-bold uppercase text-slate-400 border-b-2 border-transparent hover:text-slate-600";
+                });
+                
+                // Highlight active button
+                const activeBtn = tab === 'standard' ? btnStd : (tab === 'tps1' ? btnTps1 : btnTps2);
+                if(activeBtn) activeBtn.className = "py-2.5 text-[11px] font-bold uppercase text-blue-600 border-b-2 border-blue-600 bg-white";
+
+                if(tab === 'standard') {
+                    if(entryArea1) entryArea1.classList.replace('block', 'hidden');
+                    if(entryArea2) entryArea2.classList.replace('block', 'hidden');
+                    if(paramsArea) paramsArea.classList.replace('hidden', 'block');
+                    if(badge) badge.classList.replace('flex', 'hidden');
+                    
+                    this.isOptimizing = false;
+                    this.buildGeometry();
+                    this.calculate();
+                } else {
+                    // Both TPS modes behave similarly if data is imported
+                    if(this.importedRx && this.importedInf) {
+                        if(entryArea1) entryArea1.classList.replace('block', 'hidden');
+                        if(entryArea2) entryArea2.classList.replace('block', 'hidden');
+                        if(paramsArea) paramsArea.classList.replace('hidden', 'block');
+                        if(badge) badge.classList.replace('hidden', 'flex');
+                        
+                        this.isOptimizing = false;
+                        this.buildGeometry();
+                        this.calculate();
+                    } else {
+                        // Show specific entry/paste form based on active TPS tab
+                        if(tab === 'tps1') {
+                            if(entryArea1) entryArea1.classList.replace('hidden', 'block');
+                            if(entryArea2) entryArea2.classList.replace('block', 'hidden');
+                        } else {
+                            if(entryArea1) entryArea1.classList.replace('block', 'hidden');
+                            if(entryArea2) entryArea2.classList.replace('hidden', 'block');
+                        }
+                        if(paramsArea) paramsArea.classList.replace('block', 'hidden');
+                    }
+                }
+            }
+
+            importTPSEntry() {
+                const getPt = (prefix) => ({
+                    x: parseFloat(document.getElementById(`tps-${prefix}-x`).value),
+                    y: parseFloat(document.getElementById(`tps-${prefix}-y`).value),
+                    z: parseFloat(document.getElementById(`tps-${prefix}-z`).value)
+                });
+
+                const A1 = getPt('a1');
+                const A2 = getPt('a2');
+                const Rx = getPt('rx');
+                const Inf = getPt('inf');
+
+                // Validate if all points have numbers
+                const allPts = [A1, A2, Rx, Inf];
+                if (allPts.some(pt => isNaN(pt.x) || isNaN(pt.y) || isNaN(pt.z))) {
+                    alert("Please fill in all X, Y, Z coordinates for the 4 points.");
+                    return;
+                }
+
+                // Create a local coordinate system based on the applicator vector
+                const dx = A2.x - A1.x;
+                const dy = A2.y - A1.y;
+                const dz = A2.z - A1.z;
+                const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                
+                if (len === 0) {
+                    alert("App #1 and App #2 cannot be exactly the same point.");
+                    return;
+                }
+
+                // Z direction (Applicator axis)
+                const Z_dir = { x: dx/len, y: dy/len, z: dz/len };
+                
+                // Construct orthogonal X direction
+                let up = { x: 0, y: 1, z: 0 };
+                if (Math.abs(Z_dir.y) > 0.999) up = { x: 1, y: 0, z: 0 }; // Avoid singularity
+                
+                let X_dir = {
+                    x: up.y * Z_dir.z - up.z * Z_dir.y,
+                    y: up.z * Z_dir.x - up.x * Z_dir.z,
+                    z: up.x * Z_dir.y - up.y * Z_dir.x
+                };
+                const xLen = Math.sqrt(X_dir.x*X_dir.x + X_dir.y*X_dir.y + X_dir.z*X_dir.z);
+                X_dir = { x: X_dir.x/xLen, y: X_dir.y/xLen, z: X_dir.z/xLen };
+                
+                // Construct orthogonal Y direction (Z x X)
+                const Y_dir = {
+                    x: Z_dir.y * X_dir.z - Z_dir.z * X_dir.y,
+                    y: Z_dir.z * X_dir.x - Z_dir.x * X_dir.z,
+                    z: Z_dir.x * X_dir.y - Z_dir.y * X_dir.x
+                };
+
+                // Function to transform TPS point into our canvas 3D space
+                const transform = (pt) => {
+                    // Translate A1 to origin
+                    const vx = pt.x - A1.x;
+                    const vy = pt.y - A1.y;
+                    const vz = pt.z - A1.z;
+                    
+                    // Project onto local axes using Dot Product
+                    const locX = vx * X_dir.x + vy * X_dir.y + vz * X_dir.z;
+                    const locY = vx * Y_dir.x + vy * Y_dir.y + vz * Y_dir.z;
+                    const locZ = vx * Z_dir.x + vy * Z_dir.y + vz * Z_dir.z;
+                    
+                    // Add 0.65cm offset so A1 matches the apex distance of the first dwell
+                    // Subtract 0.35cm to shift the point UP vertically (towards the dome apex)
+                    return { x: locX, y: locY, z: locZ + 0.65 - 0.35 };
+                };
+
+                this.importedRx = { ...transform(Rx), label: 'Rx Point (TPS)' };
+                this.importedInf = { ...transform(Inf), label: 'Inf Point (TPS)' };
+                
+                // Force Beyond Tx to 1.0 cm in TPS mode
+                document.getElementById('dwellBeyond').value = "1.0";
+                
+                // Automatically generate 3D dwells (0, 0, Z) 
+                this.generateDwellPositions(false);
+                
+                // Stay on the TPS tab and refresh the view
+                this.setTab('tps1');
+            }
+
+            parseTPSData2() {
+                const text = document.getElementById('tps2-input').value;
+                const lines = text.split('\n');
+                
+                let importedRx = null;
+                let importedInf = null;
+                
+                for(let line of lines) {
+                    line = line.trim();
+                    
+                    if(line.startsWith('Cylinder_Diameter_cm:')) {
+                        const val = parseFloat(line.split(':')[1]);
+                        this.currentDiam = val; 
+                        document.querySelectorAll('.diam-btn').forEach(b => {
+                            b.classList.remove('active-diam');
+                            if(parseFloat(b.innerText) === val) b.classList.add('active-diam');
+                        });
+                    }
+                    if(line.startsWith('Treatment_Length_cm:')) {
+                        document.getElementById('txLength').value = parseFloat(line.split(':')[1]).toFixed(1);
+                    }
+                    if(line.startsWith('Dwell_Step_Size_cm:')) {
+                        document.getElementById('stepSize').value = parseFloat(line.split(':')[1]).toFixed(2);
+                    }
+                    if(line.startsWith('Rx_Aligned_xyz_cm:')) {
+                        const parts = line.split(':')[1].split(',');
+                        // Add +0.65cm offset to match the applicator apex coordinate system (First dwell is at Z=0.65)
+                        importedRx = { x: parseFloat(parts[0]), y: parseFloat(parts[1]), z: parseFloat(parts[2]) + 0.65, label: 'Rx Point (TPS)' };
+                    }
+                    if(line.startsWith('Inf_Aligned_xyz_cm:')) {
+                        const parts = line.split(':')[1].split(',');
+                        // Add +0.65cm offset to match the applicator apex coordinate system (First dwell is at Z=0.65)
+                        importedInf = { x: parseFloat(parts[0]), y: parseFloat(parts[1]), z: parseFloat(parts[2]) + 0.65, label: 'Inf Point (TPS)' };
+                    }
+                }
+                
+                if(importedRx && importedInf) {
+                    this.importedRx = importedRx;
+                    this.importedInf = importedInf;
+                    
+                    // Force Beyond Tx to 1.0 cm in TPS mode
+                    document.getElementById('dwellBeyond').value = "1.0";
+                    
+                    // Automatically generate 3D dwells (0, 0, Z) 
+                    this.generateDwellPositions(false);
+                    
+                    // Stay on the TPS tab and refresh the view
+                    this.setTab('tps2');
+                } else {
+                    alert("Could not parse valid TPS data. Please check the format.");
+                }
+            }
+
+            clearTPSEntry() {
+                this.importedRx = null;
+                this.importedInf = null;
+                // Clear the input fields for TPS #1
+                const inputs = document.querySelectorAll('#tps1-entry-area input');
+                inputs.forEach(inp => inp.value = '');
+                // Clear the textarea for TPS #2
+                const ta = document.getElementById('tps2-input');
+                if(ta) ta.value = '';
+                
+                this.setTab(this.activeTab);
             }
 
             // Centers the cylinder view on the canvas
@@ -721,7 +999,7 @@
                         if (old) t = old.time;
                     }
                     
-                    newDwells.push({ pos: roundedPos, z: z, time: t, active: shouldBeActive, orX: 0, orZ: -1 });
+                    newDwells.push({ pos: roundedPos, x: 0, y: 0, z: z, time: t, active: shouldBeActive, orX: 0, orY: 0, orZ: -1 });
                 }
                 this.dwells = newDwells;
                 this.updateDwellTable();
@@ -793,11 +1071,15 @@
                 const zRx = p.txLength / 2.0;
                 const zInf = p.txLength;
                 
-                // 1. Hard Points: Must exactly match Rx Dose
-                this.hardPoints = [
-                    { x: this.getRxX(zRx, radius, p.rxDepth), z: zRx, label: 'Rx Point (Mid)' },
-                    { x: this.getRxX(zInf, radius, p.rxDepth), z: zInf, label: 'Inf Point (End)' }
-                ];
+                // 1. Hard Points: Must exactly match Rx Dose (Use 3D Imported Data if available)
+                if (this.isTPSMode()) {
+                    this.hardPoints = [ this.importedRx, this.importedInf ];
+                } else {
+                    this.hardPoints = [
+                        { x: this.getRxX(zRx, radius, p.rxDepth), y: 0, z: zRx, label: 'Rx Point (Mid)' },
+                        { x: this.getRxX(zInf, radius, p.rxDepth), y: 0, z: zInf, label: 'Inf Point (End)' }
+                    ];
+                }
                 
                 // 2. Dome Optimization Points
                 const angleThresholdRad = (p.domeAngle * Math.PI) / 180;
@@ -806,10 +1088,10 @@
                 if (angleSteps > 0) {
                     for (let i = angleSteps; i >= 0; i--) {
                         const angle = angleThresholdRad * (i / angleSteps); 
-                        optPoints.push({ x: rxRadius * Math.cos(angle), z: radius - rxRadius * Math.sin(angle), label: '100%' });
+                        optPoints.push({ x: rxRadius * Math.cos(angle), y: 0, z: radius - rxRadius * Math.sin(angle), label: '100%' });
                     }
                 } else {
-                    optPoints.push({ x: rxRadius, z: radius, label: '100%' });
+                    optPoints.push({ x: rxRadius, y: 0, z: radius, label: '100%' });
                 }
 
                 // 3. Side Optimization Points: Ensure perfect vertical alignment with Hard Points
@@ -831,26 +1113,25 @@
 
                 uniqueSideZ.forEach(z => {
                     if (z <= p.txLength) {
-                        optPoints.push({ x: this.getRxX(z, radius, p.rxDepth), z: z, label: '100%' });
+                        optPoints.push({ x: this.getRxX(z, radius, p.rxDepth), y: 0, z: z, label: '100%' });
                     }
                 });
 
                 // 4. Surface Constraints (e.g. Max 200% on applicator surface)
                 for (let i = 18; i >= 0; i--) {
                     const angle = (Math.PI / 2) * (i / 18);
-                    surfacePoints.push({ x: radius * Math.sin(angle), z: radius - radius * Math.cos(angle), label: '200%' });
+                    surfacePoints.push({ x: radius * Math.sin(angle), y: 0, z: radius - radius * Math.cos(angle), label: '200%' });
                 }
 
                 this.optPoints = optPoints;
                 this.surfacePoints = surfacePoints;
 
-                // 5. Pre-calculate Dose-Rate Matrices
+                // 5. Pre-calculate Dose-Rate Matrices using full 3D coordinates
                 // This converts the problem into simple matrix multiplication (Dose = M * Times)
-                // which speeds up the 150,000 optimization iterations massively.
                 if (activeDwells.length > 0) {
-                    this.M_target = optPoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
-                    this.M_const = surfacePoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
-                    this.M_hard = this.hardPoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk)));
+                    this.M_target = optPoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, pt.x, pt.y||0, pt.z, p.Sk)));
+                    this.M_const = surfacePoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, pt.x, pt.y||0, pt.z, p.Sk)));
+                    this.M_hard = this.hardPoints.map(pt => activeDwells.map(dw => TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, pt.x, pt.y||0, pt.z, p.Sk)));
                     
                     // Reset Adam optimizer variables
                     this.adam_m = new Array(activeDwells.length).fill(0);
@@ -868,7 +1149,7 @@
                     if(!pts) return;
                     pts.forEach(pt => {
                         let d = 0; 
-                        activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, pt.x, pt.z, p.Sk));
+                        activeDwells.forEach(dw => d += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, pt.x, pt.y||0, pt.z, p.Sk));
                         pt.currentDose = d;
                     });
                 }
@@ -1036,7 +1317,7 @@
                     // Scale all times slightly to guarantee the Rx point is EXACTLY the target dose
                     let finalRxDose = 0;
                     activeDwells.forEach(dw => {
-                        finalRxDose += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, this.hardPoints[0].x, this.hardPoints[0].z, p.Sk);
+                        finalRxDose += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk);
                     });
                     
                     let normFactor = targetDose / finalRxDose;
@@ -1050,8 +1331,8 @@
                     let calcCurrentDoses = () => {
                         let doseRx = 0, doseInf = 0;
                         activeDwells.forEach(dw => { 
-                            doseRx += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, this.hardPoints[0].x, this.hardPoints[0].z, p.Sk); 
-                            doseInf += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, this.hardPoints[1].x, this.hardPoints[1].z, p.Sk); 
+                            doseRx += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk); 
+                            doseInf += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[1].x, this.hardPoints[1].y||0, this.hardPoints[1].z, p.Sk); 
                         });
                         return { rx: doseRx, inf: doseInf };
                     };
@@ -1067,8 +1348,8 @@
                         let minTestErr = currentMaxErr;
 
                         for (let j = 0; j < activeDwells.length; j++) {
-                            let rateRx = TG43.calculateDoseRate(0, activeDwells[j].z, activeDwells[j].orX, activeDwells[j].orZ, this.hardPoints[0].x, this.hardPoints[0].z, p.Sk);
-                            let rateInf = TG43.calculateDoseRate(0, activeDwells[j].z, activeDwells[j].orX, activeDwells[j].orZ, this.hardPoints[1].x, this.hardPoints[1].z, p.Sk);
+                            let rateRx = TG43.calculateDoseRate(activeDwells[j].x||0, activeDwells[j].y||0, activeDwells[j].z, activeDwells[j].orX||0, activeDwells[j].orY||0, activeDwells[j].orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk);
+                            let rateInf = TG43.calculateDoseRate(activeDwells[j].x||0, activeDwells[j].y||0, activeDwells[j].z, activeDwells[j].orX||0, activeDwells[j].orY||0, activeDwells[j].orZ||-1, this.hardPoints[1].x, this.hardPoints[1].y||0, this.hardPoints[1].z, p.Sk);
                             
                             // Test adding/subtracting 0.01s
                             for (let step of [0.01, -0.01]) {
@@ -1129,7 +1410,7 @@
                     for (let xi = 0; xi < numCols; xi++) {
                         const x = startX + xi * res;
                         let dose = 0; 
-                        activeDwells.forEach(dw => dose += dw.time * TG43.calculateDoseRate(0, dw.z, dw.orX, dw.orZ, x, z, p.Sk));
+                        activeDwells.forEach(dw => dose += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, x, 0, z, p.Sk));
                         row.push(dose);
                     }
                     grid.push(row);
@@ -1368,8 +1649,11 @@
                         // Draw Hard Anchors and their exact dose tooltips
                         if (this.hardPoints) {
                             this.hardPoints.forEach(pt => {
+                                // For 3D imported points, calculate the 2D radial projection for plotting on the X-Z canvas
+                                const displayX = this.isTPSMode() ? Math.sqrt(pt.x*pt.x + (pt.y||0)*(pt.y||0)) : pt.x;
+                                
                                 this.ctx.fillStyle = '#a855f7'; 
-                                this.ctx.beginPath(); this.ctx.arc(pt.x * this.zoom, pt.z * this.zoom, 4.5, 0, Math.PI * 2); this.ctx.fill();
+                                this.ctx.beginPath(); this.ctx.arc(displayX * this.zoom, pt.z * this.zoom, 4.5, 0, Math.PI * 2); this.ctx.fill();
                                 
                                 this.ctx.font = 'bold 12px Inter';
                                 const val = pt.currentDose ? pt.currentDose.toFixed(3) : '0.000';
@@ -1377,11 +1661,11 @@
                                 const tw = this.ctx.measureText(labelText).width;
 
                                 this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                                this.ctx.beginPath(); this.ctx.rect(pt.x * this.zoom + 10, pt.z * this.zoom - 14, tw + 12, 26); this.ctx.fill();
+                                this.ctx.beginPath(); this.ctx.rect(displayX * this.zoom + 10, pt.z * this.zoom - 14, tw + 12, 26); this.ctx.fill();
                                 this.ctx.strokeStyle = '#a855f7'; this.ctx.lineWidth = 1.5; this.ctx.stroke();
                                 
                                 this.ctx.fillStyle = '#1e293b';
-                                this.ctx.fillText(labelText, pt.x * this.zoom + 16, pt.z * this.zoom + 4);
+                                this.ctx.fillText(labelText, displayX * this.zoom + 16, pt.z * this.zoom + 4);
                             });
                         }
 
@@ -1467,15 +1751,16 @@
                     let totalDose = 0;
                     let rows = [];
                     activeDwells.forEach((dw, dIdx) => {
-                        const dx = pt.x - 0; // Cylinder x origin is 0
+                        const dx = pt.x - (dw.x || 0); 
+                        const dy = (pt.y || 0) - (dw.y || 0);
                         const dz = pt.z - dw.z;
-                        const r = Math.sqrt(dx*dx + dz*dz);
+                        const r = Math.sqrt(dx*dx + dy*dy + dz*dz);
                         
                         let dDose = 0, thetaDeg = 0, beta = 0, Geom = 0, g = 0, F = 0;
                         const G_ref = 0.989915; // Hardcoded reference geometry factor
 
                         if (r >= 0.05) {
-                            const cosTheta = (dx * 0 + dz * -1) / r; // dwOrX=0, dwOrZ=-1
+                            const cosTheta = (dx * (dw.orX || 0) + dy * (dw.orY || 0) + dz * (dw.orZ || -1)) / r;
                             const thetaRad = Math.acos(Math.max(-1, Math.min(1, cosTheta)));
                             thetaDeg = thetaRad * 180 / Math.PI;
                             
