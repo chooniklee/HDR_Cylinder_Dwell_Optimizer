@@ -87,7 +87,7 @@
             </div>
             <div>
                 <h1 class="text-[20px] font-black text-slate-800 leading-none tracking-tight">Varian Universal Stump Cylinder Dwell Optimizer</h1>
-                <p class="text-[11px] text-slate-400 font-bold mt-0.5">Developed by Choonik Lee, PhD | University of Michigan (Last updated on 03/15/2026)</p>
+                <p class="text-[11px] text-slate-400 font-bold mt-0.5">Developed by Choonik Lee, PhD | University of Michigan (Last updated on 03/16/2026)</p>
             </div>
         </div>
     </header>
@@ -196,13 +196,14 @@
                         
                         <!-- Optimization Weights/Preferences -->
                         <div class="col-span-2 premium-input-group">
-                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dome Coverage Preference</span><span id="dome-angle-val" class="text-[11px] font-bold text-blue-600">30°</span></div>
-                            <input type="range" id="domeAngle" min="0" max="90" step="1" value="30" class="range-input mt-2" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
+                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dome Coverage Preference</span><span id="dome-angle-val" class="text-[11px] font-bold text-blue-600">40°</span></div>
+                            <input type="range" id="domeAngle" min="0" max="90" step="1" value="40" class="range-input mt-2" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
                         </div>
                         
+                        <!-- Smoothness Preference (Logarithmic Mapping) -->
                         <div class="col-span-2 premium-input-group">
-                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Smoothing Weight</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">0.10</span></div>
-                            <input type="range" id="smoothWeight" min="0" max="1.0" step="0.01" value="0.10" class="range-input mt-2" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
+                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dwell Time Smoothing</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">7</span></div>
+                            <input type="range" id="smoothSlider" min="0" max="20" step="1" value="7" class="range-input mt-2" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
                         </div>
                         
                         <!-- Core Optimization Parameters -->
@@ -214,6 +215,11 @@
                         <div class="premium-input-group">
                             <span class="input-label">Sk Strength (U)</span>
                             <input type="number" id="skStrength" value="40700" step="100" class="side-input" onchange="app.promptOptimization()" onwheel="app.handleGenericWheel(event, this, 'promptOptimization')">
+                        </div>
+                        
+                        <div class="col-span-2 premium-input-group">
+                            <span class="input-label">Minimum Dwell Time (s)</span>
+                            <input type="number" id="minDwell" value="10.0" step="0.5" min="0" class="side-input text-orange-600" onchange="app.promptOptimization()" onwheel="app.handleGenericWheel(event, this, 'promptOptimization')">
                         </div>
                     </div>
                     <button id="btn-optimize" class="btn-optimize mt-2" onclick="app.calculate()">Start Deep Optimization</button>
@@ -852,8 +858,9 @@
                 this.calculate();
             }
 
-            // Handles Smoothing Weight changes
+            // Handles Nominal Smoothness Preference changes
             onSmoothChange(val) {
+                if (val === undefined) val = document.getElementById('smoothSlider').value;
                 document.getElementById('smooth-val').innerText = val;
                 this.isOptimizing = false;
                 this.calculate();
@@ -933,9 +940,10 @@
                     rxDepth: safeDepth,
                     rxDose: parseFloat(document.getElementById('rxDose').value) || 6.0, 
                     Sk: parseFloat(document.getElementById('skStrength').value) || 40700,
-                    domeAngle: parseInt(document.getElementById('domeAngle').value) || 30,
+                    domeAngle: parseInt(document.getElementById('domeAngle').value) || 40,
+                    smoothLevel: parseInt(document.getElementById('smoothSlider').value) || 7,
                     maxIterations: parseInt(document.getElementById('maxIterInput').value) || 150000,
-                    smoothWeight: parseFloat(document.getElementById('smoothWeight').value) || 0.10,
+                    minDwellTime: parseFloat(document.getElementById('minDwell').value) || 10.0,
                     dwellBeyond: parseFloat(document.getElementById('dwellBeyond').value) || 0
                 };
             }
@@ -1083,7 +1091,10 @@
                 
                 // 2. Dome Optimization Points
                 const angleThresholdRad = (p.domeAngle * Math.PI) / 180;
-                const angleSteps = Math.max(10, p.domeAngle); 
+                
+                // Decrease the density of dome optimization points (make it coarser)
+                // Using roughly 1 point per 6 degrees, with a minimum of 4 points to maintain shape
+                const angleSteps = Math.max(4, Math.round(p.domeAngle / 6)); 
                 
                 if (angleSteps > 0) {
                     for (let i = angleSteps; i >= 0; i--) {
@@ -1096,7 +1107,11 @@
 
                 // 3. Side Optimization Points: Ensure perfect vertical alignment with Hard Points
                 let sideZ = [];
-                for (let z = radius + 0.05; z <= p.txLength; z += 0.1) sideZ.push(z);
+                
+                // Decreasing the spatial density of side points (changed from 0.1cm to 0.25cm spacing).
+                // This prevents the straight side geometry from statistically dominating the Mean Squared Error (MSE),
+                // allowing the optimizer to balance the dose coverage equally across both the dome and the side.
+                for (let z = radius + 0.05; z <= p.txLength; z += 0.25) sideZ.push(z);
                 
                 // Forcing exact Rx and Inf Z-coordinates into the side list to prevent mismatch
                 sideZ.push(zRx);
@@ -1118,8 +1133,12 @@
                 });
 
                 // 4. Surface Constraints (e.g. Max 200% on applicator surface)
-                for (let i = 18; i >= 0; i--) {
-                    const angle = (Math.PI / 2) * (i / 18);
+                // Realistically, extreme hotspots (like 200% dose) occur almost exclusively near the apex of the dome 
+                // due to the inverse-square law dominating near the very first dwell position.
+                // Therefore, we cluster these constraint points tightly around the apex region (0 to 45 degrees)
+                // rather than spreading them across the entire 90-degree quadrant. This improves calculation speed and focus.
+                for (let i = 12; i >= 0; i--) {
+                    const angle = (Math.PI / 4) * (i / 12); // Restricts the constraint generation strictly to the top 45 degrees
                     surfacePoints.push({ x: radius * Math.sin(angle), y: 0, z: radius - radius * Math.cos(angle), label: '200%' });
                 }
 
@@ -1190,8 +1209,8 @@
                     return; 
                 }
 
-                // Reset times to a starting guess of 10s
-                activeDwells.forEach(d => { if(d.time === 0) d.time = 10.0; });
+                // Reset times to a starting guess (Enforcing the user-defined minimum constraint initially)
+                activeDwells.forEach(d => { if(d.time < p.minDwellTime) d.time = Math.max(10.0, p.minDwellTime + 2.0); });
                 this.mseHistory = [];
                 
                 this.buildGeometry();
@@ -1213,8 +1232,12 @@
                 
                 // Adam optimizer hyper-parameters
                 const lr = 0.1, beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
-                
-                const effectiveSmooth = p.smoothWeight * 0.02; 
+
+                // --- ULTRA-LIGHT PHYSICAL SMOOTHING (LOGARITHMIC MAPPING) ---
+                // The user inputs a nominal value from 0 to 20. 
+                // We map this logarithmically to actual smoothing values from 0.000001 (1e-6) to 0.0001 (1e-4).
+                // Example: Level 0 = 1.0e-6 | Level 3 ≈ 2.0e-6 | Level 10 = 1.0e-5 | Level 20 = 1.0e-4
+                const fixedSmooth = Math.pow(10, -6 + (p.smoothLevel / 10.0)); 
 
                 // We run 1500 steps per frame to balance speed and UI responsiveness
                 for (let step = 0; step < 1500; step++) {
@@ -1250,6 +1273,39 @@
 
                     this.lastMSE = currentMSE;
 
+                    /**
+                     * ============================================================================
+                     * CORE OPTIMIZATION ENGINE (ADAM OPTIMIZER)
+                     * ============================================================================
+                     * * [Objective]
+                     * This block implements the core mathematical optimization algorithm to find the 
+                     * ideal Ir-192 dwell times for a cylinder applicator. The goal is to achieve a 
+                     * perfect dose distribution that matches the prescribed dose (Rx Dose) along the 
+                     * target geometry (Rx point, Inf point, and the applicator dome) while strictly 
+                     * controlling hotspots and maintaining a clinically deliverable time profile.
+                     * * [User Parameters]
+                     * The engine takes various user-defined parameters: Cylinder Diameter, Treatment 
+                     * Length, Step Size, Rx Depth, and Rx Dose. It also incorporates optimization 
+                     * weights like Dome Coverage Preference, Dwell Time Smoothing (Logarithmic), and 
+                     * an absolute Minimum Dwell Time limit (e.g., 10.0s). Furthermore, it can ingest 
+                     * 3D coordinate data (from TPS #1 or TPS #2) to mathematically transform and match 
+                     * the exact real-world patient geometry.
+                     * * [Optimization Strategy]
+                     * This is formulated as an ill-posed constrained inverse problem. We utilize the 
+                     * Adam Optimizer to minimize the Mean Squared Error (MSE) between the calculated 
+                     * TG-43 dose and the target Rx dose across multiple optimization points. 
+                     * To enforce clinical safety and realism, we calculate and apply multiple custom 
+                     * penalty gradients before applying the Adam update formula:
+                     * 1. Constraint Gradient: Penalizes doses exceeding 200% on the applicator surface.
+                     * 2. Anchor Gradient: Massive penalty to guarantee Rx and Inf points match perfectly.
+                     * 3. Clinical Apex Constraint: Strongly penalizes Time[0] > Time[1] to prevent the 
+                     * 200% hotspot from bursting out of the dome apex into normal tissue.
+                     * 4. Ultra-Light Physical Smoothing: Gently shaves off isolated dwell time spikes 
+                     * without destroying the optimal dose coverage.
+                     * 5. Hardware Limit: Strictly clamps the minimum dwell time to the user's setting.
+                     * ============================================================================
+                     */
+
                     // 2. Calculate Gradients for Adam Optimizer
                     for (let j = 0; j < activeDwells.length; j++) {
                         let grad = 0;
@@ -1275,6 +1331,18 @@
                         let hardDiff = (hardDoses[0] - hardDoses[1]) / targetDose;
                         grad += 5000.0 * 2 * hardDiff * ((this.M_hard[0][j] - this.M_hard[1][j]) / targetDose);
 
+                        // --- CLINICAL APEX CONSTRAINT (GRADIENT PENALTY) ---
+                        // To prevent the 200% hot spot from bursting out of the applicator dome, 
+                        // clinical practice enforces that Time[1] >= Time[0] (Second dwell time >= First dwell time).
+                        // We apply a steep penalty gradient if Time[0] attempts to exceed Time[1].
+                        if (activeDwells.length >= 2) {
+                            let apexInversion = activeDwells[0].time - activeDwells[1].time;
+                            if (apexInversion > 0) {
+                                if (j === 0) grad += 1000.0 * apexInversion; // Push Dwell #1 time down
+                                if (j === 1) grad -= 1000.0 * apexInversion; // Push Dwell #2 time up
+                            }
+                        }
+
                         // Inject noise initially to prevent getting stuck
                         if (this.currentIter < this.maxIter * 0.3) grad += (Math.random() - 0.5) * 0.05 * decay;
 
@@ -1286,15 +1354,30 @@
                         
                         // Apply update
                         activeDwells[j].time -= lr * m_hat / (Math.sqrt(v_hat) + eps);
-                        if (activeDwells[j].time < 0) activeDwells[j].time = 0; // Time cannot be negative
+                        
+                        // --- CLINICAL HARDWARE LIMIT: MINIMUM DWELL TIME ---
+                        // Enforce an absolute hard constraint that an active dwell cannot be shorter than the user-defined minimum.
+                        if (activeDwells[j].time < p.minDwellTime) activeDwells[j].time = p.minDwellTime; 
                     }
 
-                    // Apply physical smoothing to prevent jagged time profiles
-                    if (activeDwells.length > 2 && effectiveSmooth > 0) {
+                    // --- APPLY ULTRA-LIGHT PHYSICAL SMOOTHING ---
+                    if (activeDwells.length > 2 && fixedSmooth > 0) {
                         const temp = activeDwells.map(d => d.time);
                         for(let j = 1; j < activeDwells.length - 1; j++) {
-                            activeDwells[j].time = activeDwells[j].time * (1 - effectiveSmooth) + ((temp[j-1] + temp[j+1])/2) * effectiveSmooth;
+                            activeDwells[j].time = activeDwells[j].time * (1 - fixedSmooth) + ((temp[j-1] + temp[j+1])/2) * fixedSmooth;
+                            
+                            // Re-clamp just in case smoothing pulled it below the clinical limit
+                            if (activeDwells[j].time < p.minDwellTime) activeDwells[j].time = p.minDwellTime;
                         }
+                    }
+
+                    // --- CLINICAL APEX CONSTRAINT (HARD CLIPPING) ---
+                    // Physically force Time[0] <= Time[1] in case Adam momentum overshoots the penalty gradient
+                    if (activeDwells.length >= 2 && activeDwells[0].time > activeDwells[1].time) {
+                        const avgTime = (activeDwells[0].time + activeDwells[1].time) / 2.0;
+                        activeDwells[0].time = avgTime;
+                        activeDwells[1].time = avgTime;
+                        // Minimum constraint is intrinsically safe here since both were already >= minDwellTime
                     }
 
                     if (currentMSE < this.targetMSE) break;
@@ -1322,7 +1405,8 @@
                     
                     let normFactor = targetDose / finalRxDose;
                     activeDwells.forEach(dw => {
-                        dw.time = Math.max(0, parseFloat((dw.time * normFactor).toFixed(2))); // Pre-round to hardware limit (0.01s)
+                        // Pre-round to hardware limit (0.01s) while strictly enforcing the user-defined absolute minimum
+                        dw.time = Math.max(p.minDwellTime, parseFloat((dw.time * normFactor).toFixed(2))); 
                     });
 
                     // --- 0.01s Precision Discrete Fine-Tuning ---
@@ -1353,7 +1437,17 @@
                             
                             // Test adding/subtracting 0.01s
                             for (let step of [0.01, -0.01]) {
-                                if (activeDwells[j].time + step < 0) continue;
+                                // --- CLINICAL HARDWARE LIMIT (DISCRETE CHECK) ---
+                                // Must not fall below the user-defined minimum limit during fine tuning
+                                if (activeDwells[j].time + step < p.minDwellTime) continue;
+
+                                // --- CLINICAL APEX CONSTRAINT (DISCRETE CHECK) ---
+                                // Do not allow a 0.01s step if it breaks the Time[1] >= Time[0] rule
+                                if (activeDwells.length >= 2) {
+                                    if (j === 0 && (activeDwells[0].time + step > activeDwells[1].time)) continue;
+                                    if (j === 1 && (activeDwells[0].time > activeDwells[1].time + step)) continue;
+                                }
+
                                 let testRx = cur.rx + rateRx * step;
                                 let testInf = cur.inf + rateInf * step;
                                 let testMaxErr = Math.max(Math.abs(targetDose - testRx), Math.abs(targetDose - testInf));
@@ -1433,23 +1527,10 @@
 
                 const pts = this.optPoints; 
                 
-                // --- Dynamic Y-Axis Scaling Logic for Dose Profiler ---
-                let maxDev = 0.2; // Default +/- 20% bounds
-                if (pts && pts.length >= 2) {
-                    let minR = 1.0, maxR = 1.0;
-                    pts.forEach(pt => {
-                        const r = pt.currentDose ? (pt.currentDose / p.rxDose) : 1.0;
-                        if (r < minR) minR = r;
-                        if (r > maxR) maxR = r;
-                    });
-                    // Calculate maximum deviation to maintain symmetry around 100% (1.0)
-                    maxDev = Math.max(Math.abs(1.0 - minR), Math.abs(maxR - 1.0));
-                    // Clamp zooming to prevent extreme jumpiness (min 5%, max 50%)
-                    maxDev = Math.max(0.05, Math.min(0.5, maxDev * 1.2)); 
-                }
-                
-                const yMaxRatio = 1.0 + maxDev;
-                const yMinRatio = 1.0 - maxDev;
+                // --- Fixed Y-Axis Scaling (80% to 120%) for Dose Profiler ---
+                // Replaced dynamic scaling with fixed +/- 20% bounds for consistency
+                const yMaxRatio = 1.20;
+                const yMinRatio = 0.80;
 
                 const getY = (r) => {
                     const norm = (r - yMinRatio) / (yMaxRatio - yMinRatio);
@@ -1462,7 +1543,7 @@
                 
                 ctx1.fillStyle = '#64748b'; ctx1.font = '600 8px Inter'; ctx1.textAlign = 'right'; ctx1.textBaseline = 'middle';
                 
-                // Dynamic Ticks (Top, 100%, Bottom)
+                // Fixed Ticks (120%, 100%, 80%)
                 const ticks = [yMaxRatio, 1.0, yMinRatio];
                 
                 ticks.forEach(ratio => {
@@ -1495,11 +1576,28 @@
                     });
                     ctx1.stroke();
 
+                    // Mark normal points and highlight specific Rx/Inf positions with purple dots
+                    const zRx = p.txLength / 2.0;
+                    const zInf = p.txLength;
+
                     pts.forEach((pt, i) => {
                         const x = leftMargin + (i / (pts.length - 1)) * chartW;
                         const ratio = pt.currentDose ? (pt.currentDose / p.rxDose) : 0;
                         const y = getY(ratio);
-                        ctx1.fillStyle = '#22c55e'; ctx1.beginPath(); ctx1.arc(x, y, 2, 0, 7); ctx1.fill();
+                        
+                        // Identify if this profile point corresponds to the Hard Anchor points
+                        const isRx = Math.abs(pt.z - zRx) < 0.01;
+                        const isInf = Math.abs(pt.z - zInf) < 0.01;
+
+                        if (isRx || isInf) {
+                            // Highlight Rx and Inf points with a prominent purple circle
+                            ctx1.fillStyle = '#a855f7'; 
+                            ctx1.beginPath(); ctx1.arc(x, y, 3.5, 0, 7); ctx1.fill();
+                        } else {
+                            // Standard green points
+                            ctx1.fillStyle = '#22c55e'; 
+                            ctx1.beginPath(); ctx1.arc(x, y, 2, 0, 7); ctx1.fill();
+                        }
                     });
                 }
 
