@@ -19,6 +19,7 @@
     - UI/UX: Changed mouse wheel increment for manual dwell time adjustments to 0.1s.
     - UI/UX: Added Total Dwell Time display below the dwells table for quick plan assessment.
     - UI/UX: Renamed "Total Time" label to "Total Dwell Time (sec)" and removed redundant 's' suffix from values.
+    - UI/UX: Changed default Dwell Time Smoothing value from 7 to 5.
     =========================================================================================
     -->
 
@@ -224,8 +225,8 @@
                         
                         <!-- Smoothness Preference (Linear Mapping) -->
                         <div class="col-span-2 premium-input-group">
-                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dwell Time Smoothing</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">7</span></div>
-                            <input type="range" id="smoothSlider" min="0" max="20" step="1" value="7" class="range-input mt-0.5" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
+                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dwell Time Smoothing</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">5</span></div>
+                            <input type="range" id="smoothSlider" min="0" max="20" step="1" value="5" class="range-input mt-0.5" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
                         </div>
                         
                         <!-- Core Optimization Parameters (Restored) -->
@@ -964,7 +965,7 @@
                     rxDose: parseFloat(document.getElementById('rxDose').value) || 6.0, 
                     Sk: parseFloat(document.getElementById('skStrength').value) || 40700,
                     domeAngle: parseInt(document.getElementById('domeAngle').value) || 40,
-                    smoothLevel: parseInt(document.getElementById('smoothSlider').value) || 7,
+                    smoothLevel: parseInt(document.getElementById('smoothSlider').value) || 5,
                     maxIterations: parseInt(document.getElementById('maxIterInput').value) || 150000,
                     dwellBeyond: parseFloat(document.getElementById('dwellBeyond').value) || 0
                 };
