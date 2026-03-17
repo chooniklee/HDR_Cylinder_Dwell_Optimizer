@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auto HDR Cylinder Dwell Time Calculator</title>
+
+    <!--
+    =========================================================================================
+    CHANGE LOG & VERSION HISTORY
+    =========================================================================================
+    [2026-03-17] 
+    - Algorithm: Reverted smoothing logic back to the highly stable v7 physical smoothing baseline.
+    - Algorithm: Removed premature "Early Stopping" to allow the optimizer to fully settle up to Max Iterations.
+    - Algorithm: Implemented Learning Rate Annealing (Exponential Decay) to solve late-stage MSE oscillations, ensuring a perfectly flat, absolute convergence.
+    - Algorithm: Recalibrated the Smoothing Slider to a logarithmic scale specifically targeting the 1e-6 to 2e-3 range for better tactile responsiveness.
+    - UI/UX: Compressed vertical spacing, increased cylinder diameter button sizes, and removed redundant headers for a cleaner look.
+    - UI/UX: Added BrachyVision-style dynamic Relative Weight Box Plots to the Dwells table.
+    - UI/UX: Changed mouse wheel increment for manual dwell time adjustments to 0.1s.
+    =========================================================================================
+    -->
+
     <!-- Tailwind CSS is used for fast and modern UI styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -1276,10 +1292,17 @@
                 // Adam optimizer hyper-parameters (lr is now dynamically calculated)
                 const beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
 
-                // --- ULTRA-LIGHT PHYSICAL SMOOTHING ---
-                const smoothMin = 0.000001;
-                const smoothMax = 0.0001;
-                const fixedSmooth = smoothMin + ((p.smoothLevel || 0) / 20.0) * (smoothMax - smoothMin);
+                // --- RECALIBRATED PHYSICAL SMOOTHING (LOG SCALE) ---
+                // Previous range (1e-9 to 1e-3) was too wide, hiding all visible effects in the top 20%.
+                // We narrowed the log scale to focus strictly on the "useful" range (1e-6 to 2e-3)
+                // so the slider feels responsive across the entire 1~20 span.
+                let fixedSmooth = 0;
+                if ((p.smoothLevel || 0) > 0) {
+                    const smoothMin = 1e-6; 
+                    const smoothMax = 2e-3;
+                    // Maps slider 1->20 exponentially to smoothMin->smoothMax
+                    fixedSmooth = smoothMin * Math.pow(smoothMax / smoothMin, (p.smoothLevel - 1) / 19.0);
+                }
 
                 // We run 1500 steps per frame to balance speed and UI responsiveness
                 for (let step = 0; step < 1500; step++) {
