@@ -1273,23 +1273,28 @@
                 const activeDwells = this.dwells.filter(d => d.active);
                 const limitDose = p.rxDose * 2.0, targetDose = p.rxDose;
                 
-                // Adam optimizer hyper-parameters
-                const lr = 0.1, beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+                // Adam optimizer hyper-parameters (lr is now dynamically calculated)
+                const beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
 
-                // --- ULTRA-LIGHT PHYSICAL SMOOTHING (V7 REVERT) ---
-                // The user inputs a nominal value from 0 to 20. 
-                // We map this linearly to actual smoothing values from 0.000001 (1e-6) to 0.0001 (1e-4).
+                // --- ULTRA-LIGHT PHYSICAL SMOOTHING ---
                 const smoothMin = 0.000001;
                 const smoothMax = 0.0001;
-                const fixedSmooth = smoothMin + (p.smoothLevel / 20.0) * (smoothMax - smoothMin); 
+                const fixedSmooth = smoothMin + ((p.smoothLevel || 0) / 20.0) * (smoothMax - smoothMin);
 
                 // We run 1500 steps per frame to balance speed and UI responsiveness
                 for (let step = 0; step < 1500; step++) {
                     this.currentIter++;
                     this.adam_t++;
                     
+                    const progress = this.currentIter / this.maxIter;
+                    
+                    // --- LEARNING RATE ANNEALING (The Brakes) ---
+                    // Starts with a fast 0.1s step size and exponentially decays to a microscopic 0.001s step.
+                    // This prevents the optimizer from endlessly bouncing off the heavy penalty walls.
+                    const lr = 0.1 * Math.pow(0.001 / 0.1, progress);
+
                     // Decaying randomness to escape local minima early on
-                    const decay = Math.max(0, 1 - (this.currentIter / this.maxIter));
+                    const decay = Math.max(0, 1 - progress);
                     let currentMSE = 0;
 
                     // 1. Evaluate current dose at all Opt Points
@@ -1404,7 +1409,7 @@
                         if (activeDwells[j].time < 3.0) activeDwells[j].time = 3.0; 
                     }
 
-                    // --- APPLY ULTRA-LIGHT PHYSICAL SMOOTHING (V7 REVERT) ---
+                    // --- APPLY ULTRA-LIGHT PHYSICAL SMOOTHING ---
                     if (activeDwells.length > 2 && fixedSmooth > 0) {
                         const temp = activeDwells.map(d => d.time);
                         for(let j = 1; j < activeDwells.length - 1; j++) {
@@ -1447,17 +1452,28 @@
                 if (this.currentIter >= this.maxIter || this.lastMSE < this.targetMSE) {
                     
                     // --- Final Exact Renormalization via TG-43 ---
+                    // Scale all times slightly to guarantee the Rx point is EXACTLY the target dose
                     let finalRxDose = 0;
-                    activeDwells.forEach((dw, j) => finalRxDose += dw.time * this.M_hard[0][j]);
+                    activeDwells.forEach(dw => {
+                        finalRxDose += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk);
+                    });
                     
                     let normFactor = targetDose / finalRxDose;
-                    activeDwells.forEach(dw => dw.time = Math.max(3.0, parseFloat((dw.time * normFactor).toFixed(2))));
+                    activeDwells.forEach(dw => {
+                        // Pre-round to hardware limit (0.01s) while strictly enforcing the 3.0s absolute minimum
+                        dw.time = Math.max(3.0, parseFloat((dw.time * normFactor).toFixed(2))); 
+                    });
 
-                    // --- 0.01s Precision Discrete Fine-Tuning (Optimized with Pre-Calculated Matrices) ---
+                    // --- 0.01s Precision Discrete Fine-Tuning ---
+                    // Because hardware can only deliver 0.01s increments, rounding causes small dose errors.
+                    // This logic selectively adds/subtracts 0.01s to specific dwells to minimize that final error.
                     let calcCurrentDoses = () => {
-                        let rx = 0, inf = 0;
-                        activeDwells.forEach((dw, j) => { rx += dw.time * this.M_hard[0][j]; inf += dw.time * this.M_hard[1][j]; });
-                        return { rx, inf };
+                        let doseRx = 0, doseInf = 0;
+                        activeDwells.forEach(dw => { 
+                            doseRx += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk); 
+                            doseInf += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[1].x, this.hardPoints[1].y||0, this.hardPoints[1].z, p.Sk); 
+                        });
+                        return { rx: doseRx, inf: doseInf };
                     };
                     
                     let cur = calcCurrentDoses();
@@ -1465,27 +1481,47 @@
                     let loopCount = 0;
                     
                     while (maxErr() > 0.0005 && loopCount < 100) {
-                        let bestJ = -1, bestStep = 0, minTestErr = maxErr();
+                        let bestJ = -1;
+                        let bestStep = 0;
+                        let currentMaxErr = maxErr();
+                        let minTestErr = currentMaxErr;
 
                         for (let j = 0; j < activeDwells.length; j++) {
-                            const rateRx = this.M_hard[0][j], rateInf = this.M_hard[1][j];
+                            let rateRx = TG43.calculateDoseRate(activeDwells[j].x||0, activeDwells[j].y||0, activeDwells[j].z, activeDwells[j].orX||0, activeDwells[j].orY||0, activeDwells[j].orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk);
+                            let rateInf = TG43.calculateDoseRate(activeDwells[j].x||0, activeDwells[j].y||0, activeDwells[j].z, activeDwells[j].orX||0, activeDwells[j].orY||0, activeDwells[j].orZ||-1, this.hardPoints[1].x, this.hardPoints[1].y||0, this.hardPoints[1].z, p.Sk);
                             
+                            // Test adding/subtracting 0.01s
                             for (let step of [0.01, -0.01]) {
+                                // --- CLINICAL HARDWARE LIMIT (DISCRETE CHECK) ---
+                                // Must not fall below the 3.0s minimum limit during fine tuning
                                 if (activeDwells[j].time + step < 3.0) continue;
+
+                                // --- CLINICAL APEX CONSTRAINT (DISCRETE CHECK) ---
+                                // Do not allow a 0.01s step if it breaks the Time[1] >= Time[0] rule
                                 if (activeDwells.length >= 2) {
                                     if (j === 0 && (activeDwells[0].time + step > activeDwells[1].time)) continue;
                                     if (j === 1 && (activeDwells[0].time > activeDwells[1].time + step)) continue;
                                 }
 
-                                let testMaxErr = Math.max(Math.abs(targetDose - (cur.rx + rateRx * step)), Math.abs(targetDose - (cur.inf + rateInf * step)));
-                                if (testMaxErr < minTestErr) { minTestErr = testMaxErr; bestJ = j; bestStep = step; }
+                                let testRx = cur.rx + rateRx * step;
+                                let testInf = cur.inf + rateInf * step;
+                                let testMaxErr = Math.max(Math.abs(targetDose - testRx), Math.abs(targetDose - testInf));
+                                
+                                if (testMaxErr < minTestErr) {
+                                    minTestErr = testMaxErr;
+                                    bestJ = j;
+                                    bestStep = step;
+                                }
                             }
                         }
 
                         if (bestJ !== -1) {
-                            activeDwells[bestJ].time = parseFloat((activeDwells[bestJ].time + bestStep).toFixed(2));
+                            activeDwells[bestJ].time += bestStep;
+                            activeDwells[bestJ].time = parseFloat(activeDwells[bestJ].time.toFixed(2));
                             cur = calcCurrentDoses();
-                        } else break;
+                        } else {
+                            break; // No single 0.01s step improves both points further, finish.
+                        }
                         loopCount++;
                     }
 
