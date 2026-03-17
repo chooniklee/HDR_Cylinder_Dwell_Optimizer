@@ -17,6 +17,8 @@
     - UI/UX: Compressed vertical spacing, increased cylinder diameter button sizes, and removed redundant headers for a cleaner look.
     - UI/UX: Added BrachyVision-style dynamic Relative Weight Box Plots to the Dwells table.
     - UI/UX: Changed mouse wheel increment for manual dwell time adjustments to 0.1s.
+    - UI/UX: Added Total Dwell Time display below the dwells table for quick plan assessment.
+    - UI/UX: Renamed "Total Time" label to "Total Dwell Time (sec)" and removed redundant 's' suffix from values.
     =========================================================================================
     -->
 
@@ -262,6 +264,12 @@
                             </thead>
                             <tbody id="dwellResults"></tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Total Time Display -->
+                    <div class="mt-2 flex justify-between items-center bg-[#f8fafc] border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
+                        <span class="text-[12px] font-bold text-slate-600">Total Dwell Time (sec):</span>
+                        <span id="total-time-display" class="text-[13px] font-black text-blue-600 font-mono">0.00</span>
                     </div>
                 </section>
             </div>
@@ -1070,8 +1078,10 @@
             updateDwellBars() {
                 const activeDwells = this.dwells.filter(d => d.active);
                 let maxTime = 0;
+                let totalTime = 0;
                 if (activeDwells.length > 0) {
                     maxTime = Math.max(...activeDwells.map(d => d.time));
+                    totalTime = activeDwells.reduce((sum, d) => sum + d.time, 0);
                 }
                 this.dwells.forEach((dw, i) => {
                     const bar = document.getElementById(`bar-${i}`);
@@ -1079,14 +1089,19 @@
                         bar.style.width = (maxTime > 0 && dw.active) ? `${(dw.time / maxTime) * 100}%` : '0%';
                     }
                 });
+                
+                const totalEl = document.getElementById('total-time-display');
+                if (totalEl) totalEl.innerText = totalTime.toFixed(2);
             }
 
             // Re-renders the HTML table of dwells on the left
             updateDwellTable() {
                 const activeDwells = this.dwells.filter(d => d.active);
                 let maxTime = 0;
+                let totalTime = 0;
                 if (activeDwells.length > 0) {
                     maxTime = Math.max(...activeDwells.map(d => d.time));
+                    totalTime = activeDwells.reduce((sum, d) => sum + d.time, 0);
                 }
 
                 const tbody = document.getElementById('dwellResults');
@@ -1116,6 +1131,9 @@
                         </td>
                     </tr>
                 `}).join('');
+                
+                const totalEl = document.getElementById('total-time-display');
+                if (totalEl) totalEl.innerText = totalTime.toFixed(2);
             }
 
             // Calculates the mathematical X coordinate (radius) of the cylinder surface at a specific Z height
