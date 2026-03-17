@@ -1255,8 +1255,6 @@
                 // Reset times to a starting guess (Enforcing the hard-coded 3.0s minimum constraint initially)
                 activeDwells.forEach(d => { if(d.time < 3.0) d.time = 10.0; });
                 this.mseHistory = [];
-                this.bestMSE = Infinity;
-                this.convergedCount = 0;
                 
                 this.buildGeometry();
 
@@ -1278,7 +1276,7 @@
                 // Adam optimizer hyper-parameters
                 const lr = 0.1, beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
 
-                // --- ULTRA-LIGHT PHYSICAL SMOOTHING (LINEAR MAPPING) ---
+                // --- ULTRA-LIGHT PHYSICAL SMOOTHING (V7 REVERT) ---
                 // The user inputs a nominal value from 0 to 20. 
                 // We map this linearly to actual smoothing values from 0.000001 (1e-6) to 0.0001 (1e-4).
                 const smoothMin = 0.000001;
@@ -1406,7 +1404,7 @@
                         if (activeDwells[j].time < 3.0) activeDwells[j].time = 3.0; 
                     }
 
-                    // --- APPLY ULTRA-LIGHT PHYSICAL SMOOTHING ---
+                    // --- APPLY ULTRA-LIGHT PHYSICAL SMOOTHING (V7 REVERT) ---
                     if (activeDwells.length > 2 && fixedSmooth > 0) {
                         const temp = activeDwells.map(d => d.time);
                         for(let j = 1; j < activeDwells.length - 1; j++) {
@@ -1426,23 +1424,16 @@
                         // Minimum constraint is intrinsically safe here since both were already >= 3.0s
                     }
 
-                    // --- EARLY STOPPING (CONVERGENCE CHECK) ---
-                    // If the MSE does not improve by at least 1e-12 over 60,000 iterations,
-                    // we consider the algorithm fully converged and stop early to save computation time.
-                    if (currentMSE < this.bestMSE - 1e-12) {
-                        this.bestMSE = currentMSE;
-                        this.convergedCount = 0;
-                    } else {
-                        this.convergedCount++;
-                    }
-
-                    if (currentMSE < this.targetMSE || this.convergedCount > 60000) break;
+                    // --- BREAK CONDITION ---
+                    // Stop only if we miraculously hit the absolute target MSE (perfect 0 error).
+                    // Otherwise, continue until Max Iterations is reached to allow the optimizer to fully settle.
+                    if (currentMSE < this.targetMSE) break;
                 }
 
                 this.mseHistory.push(this.lastMSE);
 
                 // Update UI visually
-                document.getElementById('iter-counter').innerText = `Iteration: ${this.currentIter} / ${this.maxIter}${this.convergedCount > 60000 ? ' (Converged)' : ''}`;
+                document.getElementById('iter-counter').innerText = `Iteration: ${this.currentIter} / ${this.maxIter}`;
                 document.getElementById('mse-display').innerText = `MSE: ${this.lastMSE.toFixed(7)}`;
                 
                 // Dynamically update the X-axis maximum label on the MSE chart to match the actual iteration count
@@ -1453,31 +1444,20 @@
                 this.computeIsodose();
 
                 // Check termination conditions
-                if (this.currentIter >= this.maxIter || this.lastMSE < this.targetMSE || this.convergedCount > 60000) {
+                if (this.currentIter >= this.maxIter || this.lastMSE < this.targetMSE) {
                     
                     // --- Final Exact Renormalization via TG-43 ---
-                    // Scale all times slightly to guarantee the Rx point is EXACTLY the target dose
                     let finalRxDose = 0;
-                    activeDwells.forEach(dw => {
-                        finalRxDose += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk);
-                    });
+                    activeDwells.forEach((dw, j) => finalRxDose += dw.time * this.M_hard[0][j]);
                     
                     let normFactor = targetDose / finalRxDose;
-                    activeDwells.forEach(dw => {
-                        // Pre-round to hardware limit (0.01s) while strictly enforcing the 3.0s absolute minimum
-                        dw.time = Math.max(3.0, parseFloat((dw.time * normFactor).toFixed(2))); 
-                    });
+                    activeDwells.forEach(dw => dw.time = Math.max(3.0, parseFloat((dw.time * normFactor).toFixed(2))));
 
-                    // --- 0.01s Precision Discrete Fine-Tuning ---
-                    // Because hardware can only deliver 0.01s increments, rounding causes small dose errors.
-                    // This logic selectively adds/subtracts 0.01s to specific dwells to minimize that final error.
+                    // --- 0.01s Precision Discrete Fine-Tuning (Optimized with Pre-Calculated Matrices) ---
                     let calcCurrentDoses = () => {
-                        let doseRx = 0, doseInf = 0;
-                        activeDwells.forEach(dw => { 
-                            doseRx += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk); 
-                            doseInf += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[1].x, this.hardPoints[1].y||0, this.hardPoints[1].z, p.Sk); 
-                        });
-                        return { rx: doseRx, inf: doseInf };
+                        let rx = 0, inf = 0;
+                        activeDwells.forEach((dw, j) => { rx += dw.time * this.M_hard[0][j]; inf += dw.time * this.M_hard[1][j]; });
+                        return { rx, inf };
                     };
                     
                     let cur = calcCurrentDoses();
@@ -1485,47 +1465,27 @@
                     let loopCount = 0;
                     
                     while (maxErr() > 0.0005 && loopCount < 100) {
-                        let bestJ = -1;
-                        let bestStep = 0;
-                        let currentMaxErr = maxErr();
-                        let minTestErr = currentMaxErr;
+                        let bestJ = -1, bestStep = 0, minTestErr = maxErr();
 
                         for (let j = 0; j < activeDwells.length; j++) {
-                            let rateRx = TG43.calculateDoseRate(activeDwells[j].x||0, activeDwells[j].y||0, activeDwells[j].z, activeDwells[j].orX||0, activeDwells[j].orY||0, activeDwells[j].orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk);
-                            let rateInf = TG43.calculateDoseRate(activeDwells[j].x||0, activeDwells[j].y||0, activeDwells[j].z, activeDwells[j].orX||0, activeDwells[j].orY||0, activeDwells[j].orZ||-1, this.hardPoints[1].x, this.hardPoints[1].y||0, this.hardPoints[1].z, p.Sk);
+                            const rateRx = this.M_hard[0][j], rateInf = this.M_hard[1][j];
                             
-                            // Test adding/subtracting 0.01s
                             for (let step of [0.01, -0.01]) {
-                                // --- CLINICAL HARDWARE LIMIT (DISCRETE CHECK) ---
-                                // Must not fall below the 3.0s minimum limit during fine tuning
                                 if (activeDwells[j].time + step < 3.0) continue;
-
-                                // --- CLINICAL APEX CONSTRAINT (DISCRETE CHECK) ---
-                                // Do not allow a 0.01s step if it breaks the Time[1] >= Time[0] rule
                                 if (activeDwells.length >= 2) {
                                     if (j === 0 && (activeDwells[0].time + step > activeDwells[1].time)) continue;
                                     if (j === 1 && (activeDwells[0].time > activeDwells[1].time + step)) continue;
                                 }
 
-                                let testRx = cur.rx + rateRx * step;
-                                let testInf = cur.inf + rateInf * step;
-                                let testMaxErr = Math.max(Math.abs(targetDose - testRx), Math.abs(targetDose - testInf));
-                                
-                                if (testMaxErr < minTestErr) {
-                                    minTestErr = testMaxErr;
-                                    bestJ = j;
-                                    bestStep = step;
-                                }
+                                let testMaxErr = Math.max(Math.abs(targetDose - (cur.rx + rateRx * step)), Math.abs(targetDose - (cur.inf + rateInf * step)));
+                                if (testMaxErr < minTestErr) { minTestErr = testMaxErr; bestJ = j; bestStep = step; }
                             }
                         }
 
                         if (bestJ !== -1) {
-                            activeDwells[bestJ].time += bestStep;
-                            activeDwells[bestJ].time = parseFloat(activeDwells[bestJ].time.toFixed(2));
+                            activeDwells[bestJ].time = parseFloat((activeDwells[bestJ].time + bestStep).toFixed(2));
                             cur = calcCurrentDoses();
-                        } else {
-                            break; // No single 0.01s step improves both points further, finish.
-                        }
+                        } else break;
                         loopCount++;
                     }
 
