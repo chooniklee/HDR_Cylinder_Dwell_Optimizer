@@ -10,6 +10,7 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-03-18]
+    - UI/UX: Placed "Dome Coverage" and "Dwell Smoothing" sliders side-by-side in a 2-column split to save vertical space. Shortened their labels to fit perfectly without text truncation.
     - UI/UX: Vertically centered the checkboxes and data in the Dwells table by explicitly adding the 'align-middle' class to all table cells, fixing the top-aligned floating issue.
     - UI/UX: Restored the native spin buttons (arrows) on the Time input fields to provide intuitive visual cues for manual adjustment.
     - UI/UX: Widened the "Time (s)" column (from 64px to 84px) to accommodate the restored spin buttons without text clipping.
@@ -261,23 +262,24 @@
                             <input type="number" id="skStrength" value="40700" step="100" class="side-input" onchange="app.promptOptimization()" onwheel="app.handleGenericWheel(event, this, 'promptOptimization')">
                         </div>
                         
-                        <!-- Optimization Weights/Preferences -->
-                        <div class="col-span-3 premium-input-group">
-                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dome Coverage Preference</span><span id="dome-angle-val" class="text-[11px] font-bold text-blue-600">40°</span></div>
-                            <input type="range" id="domeAngle" min="1" max="90" step="1" value="40" class="range-input w-full m-0" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
-                            <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1">
-                                <span>Side</span>
-                                <span>Apex</span>
+                        <!-- Optimization Weights/Preferences (Side by Side) -->
+                        <div class="col-span-3 grid grid-cols-2 gap-2">
+                            <div class="premium-input-group">
+                                <div class="flex justify-between items-center pr-1"><span class="input-label mb-0 truncate" title="Dome Coverage Preference">Dome Coverage</span><span id="dome-angle-val" class="text-[11px] font-bold text-blue-600">40°</span></div>
+                                <input type="range" id="domeAngle" min="1" max="90" step="1" value="40" class="range-input w-full m-0" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
+                                <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1">
+                                    <span>Side</span>
+                                    <span>Apex</span>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <!-- Smoothness Preference (Linear Mapping) -->
-                        <div class="col-span-3 premium-input-group">
-                            <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dwell Time Smoothing</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">5</span></div>
-                            <input type="range" id="smoothSlider" min="0" max="20" step="1" value="5" class="range-input w-full m-0" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
-                            <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1">
-                                <span>Less</span>
-                                <span>More</span>
+                            
+                            <div class="premium-input-group">
+                                <div class="flex justify-between items-center pr-1"><span class="input-label mb-0 truncate" title="Dwell Time Smoothing">Dwell Smoothing</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">5</span></div>
+                                <input type="range" id="smoothSlider" min="0" max="20" step="1" value="5" class="range-input w-full m-0" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
+                                <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1">
+                                    <span>Less</span>
+                                    <span>More</span>
+                                </div>
                             </div>
                         </div>
                         
