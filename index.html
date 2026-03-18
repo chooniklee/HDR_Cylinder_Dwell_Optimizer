@@ -10,6 +10,10 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-03-18]
+    - UI/UX: Adjusted the grid ratio of the optimization sliders to 55:45 (using grid-cols-[11fr_9fr]) to allocate more horizontal space to the "Dome Coverage Preference" label, preventing text truncation.
+    - Feature/Canvas: Overhauled the canvas zooming logic. The zoom action is now mathematically anchored to the current mouse pointer location rather than the canvas origin, significantly reducing the need for manual panning.
+    - UI/UX: Relocated slider value displays (e.g., "40°", "5") from the top right to the bottom center of the slider tracks, sitting between the min/max labels.
+    - UI/UX: Restored the full label text "Dome Coverage Preference" and "Dwell Time Smoothing" as space was freed up by moving the value display.
     - UI/UX: Placed "Dome Coverage" and "Dwell Smoothing" sliders side-by-side in a 2-column split to save vertical space. Shortened their labels to fit perfectly without text truncation.
     - UI/UX: Vertically centered the checkboxes and data in the Dwells table by explicitly adding the 'align-middle' class to all table cells, fixing the top-aligned floating issue.
     - UI/UX: Restored the native spin buttons (arrows) on the Time input fields to provide intuitive visual cues for manual adjustment.
@@ -262,23 +266,26 @@
                             <input type="number" id="skStrength" value="40700" step="100" class="side-input" onchange="app.promptOptimization()" onwheel="app.handleGenericWheel(event, this, 'promptOptimization')">
                         </div>
                         
-                        <!-- Optimization Weights/Preferences (Side by Side) -->
-                        <div class="col-span-3 grid grid-cols-2 gap-2">
+                        <!-- Optimization Weights/Preferences (Side by Side - 55:45 Ratio) -->
+                        <!-- Replaced grid-cols-2 (50:50) with an 11fr to 9fr ratio (approx 55:45) to fit the longer Dome Coverage label -->
+                        <div class="col-span-3 grid grid-cols-[11fr_9fr] gap-2">
                             <div class="premium-input-group">
-                                <div class="flex justify-between items-center pr-1"><span class="input-label mb-0 truncate" title="Dome Coverage Preference">Dome Coverage</span><span id="dome-angle-val" class="text-[11px] font-bold text-blue-600">40°</span></div>
+                                <div class="flex justify-between items-center pr-1"><span class="input-label mb-0 truncate" title="Dome Coverage Preference">Dome Coverage Preference</span></div>
                                 <input type="range" id="domeAngle" min="1" max="90" step="1" value="40" class="range-input w-full m-0" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
-                                <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1">
-                                    <span>Side</span>
-                                    <span>Apex</span>
+                                <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1 relative">
+                                    <span class="flex-1 text-left">Side</span>
+                                    <span id="dome-angle-val" class="text-blue-600 flex-1 text-center">40°</span>
+                                    <span class="flex-1 text-right">Apex</span>
                                 </div>
                             </div>
                             
                             <div class="premium-input-group">
-                                <div class="flex justify-between items-center pr-1"><span class="input-label mb-0 truncate" title="Dwell Time Smoothing">Dwell Smoothing</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">5</span></div>
+                                <div class="flex justify-between items-center pr-1"><span class="input-label mb-0 truncate" title="Dwell Time Smoothing">Dwell Time Smoothing</span></div>
                                 <input type="range" id="smoothSlider" min="0" max="20" step="1" value="5" class="range-input w-full m-0" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
-                                <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1">
-                                    <span>Less</span>
-                                    <span>More</span>
+                                <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1 relative">
+                                    <span class="flex-1 text-left">Less</span>
+                                    <span id="smooth-val" class="text-blue-600 flex-1 text-center">5</span>
+                                    <span class="flex-1 text-right">More</span>
                                 </div>
                             </div>
                         </div>
@@ -868,7 +875,30 @@
             // Sets up mouse/window events (Resize, Zooming, Panning)
             initEventListeners() {
                 window.addEventListener('resize', () => this.resize());
-                this.canvas.addEventListener('wheel', e => { this.zoom *= e.deltaY > 0 ? 0.9 : 1.1; e.preventDefault(); }, { passive: false });
+                
+                // Implement zoom relative to the mouse pointer
+                this.canvas.addEventListener('wheel', e => { 
+                    e.preventDefault();
+                    
+                    // 1. Get the current mouse position relative to the canvas (Screen Coordinates)
+                    const rect = this.canvas.getBoundingClientRect();
+                    const mx = e.clientX - rect.left;
+                    const my = e.clientY - rect.top;
+                    
+                    // 2. Convert Screen Coordinates to World Coordinates (Physical cm space) based on the CURRENT zoom and offset
+                    const worldX = (mx - this.offset.x) / this.zoom;
+                    const worldY = (my - this.offset.y) / this.zoom;
+                    
+                    // 3. Apply the zoom multiplier
+                    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                    this.zoom *= zoomFactor;
+                    
+                    // 4. Recalculate the offset so that the specific World Coordinate remains exactly under the Screen Coordinate
+                    this.offset.x = mx - (worldX * this.zoom);
+                    this.offset.y = my - (worldY * this.zoom);
+                    
+                }, { passive: false });
+                
                 this.canvas.addEventListener('mousedown', e => { this.isDragging = true; this.lastMouse = { x: e.clientX, y: e.clientY }; });
                 window.addEventListener('mousemove', e => { 
                     const rect = this.canvas.getBoundingClientRect();
