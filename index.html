@@ -10,6 +10,9 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-03-18]
+    - Bug Fix/UI: Set the minimum value of the Dome Coverage Preference slider to 1 degree. This prevents a JavaScript falsy evaluation bug (where 0 resets to 40) and mathematically ensures at least a minimal spatial spread for apex constraints.
+    - UI/UX: Increased font size of slider labels ("Side/Apex", "Less/More") and adjusted margins to sit tightly under the slider track, matching Dr. Lee's mockup.
+    - System: Restored full HTML code to the canvas after White Paper generation.
     - Branding: Shortened the title to "DL-inspired Varian Cylinder Dwell Optimizer".
     - Algorithm: Removed early stopping mechanism entirely to strictly enforce running up to the specified Max Iterations.
     - UI/UX: Enforced the Max Iterations input step and internal handling to be an exact multiple of 1500 (the inner loop step size) to prevent iteration overshoots.
@@ -225,13 +228,21 @@
                         <!-- Optimization Weights/Preferences -->
                         <div class="col-span-2 premium-input-group">
                             <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dome Coverage Preference</span><span id="dome-angle-val" class="text-[11px] font-bold text-blue-600">40°</span></div>
-                            <input type="range" id="domeAngle" min="0" max="90" step="1" value="40" class="range-input mt-0.5" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
+                            <input type="range" id="domeAngle" min="1" max="90" step="1" value="40" class="range-input w-full m-0" oninput="app.onDomeAngleChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onDomeAngleChange')">
+                            <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1">
+                                <span>Side</span>
+                                <span>Apex</span>
+                            </div>
                         </div>
                         
                         <!-- Smoothness Preference (Linear Mapping) -->
                         <div class="col-span-2 premium-input-group">
                             <div class="flex justify-between items-center pr-1"><span class="input-label mb-0">Dwell Time Smoothing</span><span id="smooth-val" class="text-[11px] font-bold text-blue-600">5</span></div>
-                            <input type="range" id="smoothSlider" min="0" max="20" step="1" value="5" class="range-input mt-0.5" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
+                            <input type="range" id="smoothSlider" min="0" max="20" step="1" value="5" class="range-input w-full m-0" oninput="app.onSmoothChange(this.value)" onwheel="app.handleGenericWheel(event, this, 'onSmoothChange')">
+                            <div class="flex justify-between text-[10px] text-slate-500 font-bold px-1 -mt-1 pb-1">
+                                <span>Less</span>
+                                <span>More</span>
+                            </div>
                         </div>
                         
                         <!-- Core Optimization Parameters (Restored) -->
@@ -961,6 +972,9 @@
             getInputs() {
                 let depthVal = parseFloat(document.getElementById('rxDepth').value);
                 let safeDepth = isNaN(depthVal) ? 0.0 : depthVal;
+                
+                let domeVal = parseInt(document.getElementById('domeAngle').value, 10);
+                let smoothVal = parseInt(document.getElementById('smoothSlider').value, 10);
 
                 return {
                     cylDiam: this.currentDiam,
@@ -969,8 +983,8 @@
                     rxDepth: safeDepth,
                     rxDose: parseFloat(document.getElementById('rxDose').value) || 6.0, 
                     Sk: parseFloat(document.getElementById('skStrength').value) || 40700,
-                    domeAngle: parseInt(document.getElementById('domeAngle').value) || 40,
-                    smoothLevel: parseInt(document.getElementById('smoothSlider').value) || 5,
+                    domeAngle: isNaN(domeVal) ? 40 : domeVal,
+                    smoothLevel: isNaN(smoothVal) ? 5 : smoothVal,
                     maxIterations: parseInt(document.getElementById('maxIterInput').value) || 150000,
                     dwellBeyond: parseFloat(document.getElementById('dwellBeyond').value) || 0
                 };
