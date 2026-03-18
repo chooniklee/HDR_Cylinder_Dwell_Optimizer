@@ -10,6 +10,12 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-03-18]
+    - UI/UX: Styled all numeric input fields (.side-input, .table-time-input) with explicit white backgrounds, subtle borders, and inner shadows to clearly indicate they are editable, matching the "Beyond Tx" field.
+    - UI/UX: Fixed vertical centering of the text in the "Start Optimization" and "Re-Start Optimization" buttons. Removed explicit vertical padding to allow flexbox (justify-center) to achieve perfect mathematical vertical alignment, and added a slight gap between the two text lines for better readability.
+    - UI/UX: Renamed the "Auto" toggle button to "Auto Restart" and widened it to clarify its function. 
+    - UI/UX: Narrowed the main "Start Optimization" button, reduced its font size, and wrapped the text into two lines to accommodate the wider Auto Restart button elegantly.
+    - Feature/UI: Added an "Auto" toggle switch next to the main optimization button (default ON). When turned OFF, parameter changes won't trigger immediate calculation.
+    - UI/UX: Renamed the main button to "Start Optimization" to save space. When AutoStart is OFF and parameters change, the button visually shifts to an animated orange "Re-Start Optimization" state.
     - UI/UX: Adjusted the grid ratio of the optimization sliders to 55:45 (using grid-cols-[11fr_9fr]) to allocate more horizontal space to the "Dome Coverage Preference" label, preventing text truncation.
     - Feature/Canvas: Overhauled the canvas zooming logic. The zoom action is now mathematically anchored to the current mouse pointer location rather than the canvas origin, significantly reducing the need for manual panning.
     - UI/UX: Relocated slider value displays (e.g., "40°", "5") from the top right to the bottom center of the slider tracks, sitting between the min/max labels.
@@ -68,38 +74,52 @@
         
         /* Reusable UI Component Styles */
         .premium-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        /* Reduced vertical padding by another ~15% for a slimmer input box look */
-        .premium-input-group { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2px 8px; transition: all 0.2s; }
-        .premium-input-group:focus-within { border-color: #3b82f6; background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        /* Adjusted padding and removed focus-within to transfer focus highlights directly to individual white input boxes */
+        .premium-input-group { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 3px 8px; transition: all 0.2s; }
         
         /* Input fields */
         .side-input { 
-            width: 100%; border: none; background: transparent; 
+            width: 100%; border: 1px solid #cbd5e1; background: white; border-radius: 4px;
             font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; 
             text-align: center; color: #1e293b; outline: none;
-            padding: 0; line-height: 1.3;
+            padding: 2px 0; margin-top: 3px; margin-bottom: 3px; line-height: 1.3;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05); transition: all 0.2s;
         }
+        .side-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        
         .table-time-input {
-            width: 100%; border: 1px solid transparent; background: transparent;
+            width: 100%; border: 1px solid #cbd5e1; background: white;
             font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
-            /* Changed text alignment to left and added a small left padding for better visual grouping */
             text-align: left; color: #2563eb; outline: none; border-radius: 4px;
-            transition: all 0.2s; padding: 0px 4px;
+            transition: all 0.2s; padding: 2px 4px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
         }
-        .table-time-input:hover { background: #eff6ff; border-color: #bfdbfe; }
-        .table-time-input:focus { background: white; border-color: #3b82f6; }
+        .table-time-input:hover { border-color: #94a3b8; }
+        .table-time-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
         
         /* Removed bottom margin and tightened line height for compactness */
         .input-label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 0px; color: #475569; letter-spacing: 0.01em; text-align: left; padding-left: 4px; line-height: 1.4; }
         
         /* Button styling */
         .btn-optimize { 
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 10px; border-radius: 8px; 
-            font-weight: 700; font-size: 13px; width: 100%; transition: all 0.2s;
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); border: none; cursor: pointer; letter-spacing: 0.02em;
+            /* Removed vertical padding (6px -> 0) to allow flexbox justify-center to perfectly align the text vertically */
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 0 4px; border-radius: 8px; 
+            font-weight: 700; font-size: 11px; width: 100%; transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); border: none; cursor: pointer; letter-spacing: 0.01em;
+            line-height: 1.1;
         }
         .btn-optimize:hover { transform: translateY(-1px); box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3); }
         .btn-optimize:disabled { background: #cbd5e1 !important; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.7; animation: none !important; }
+
+        /* Needs Restart Animation and Gradient */
+        .btn-optimize.needs-restart { 
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
+            animation: pulse-orange 2s infinite; 
+        }
+        @keyframes pulse-orange {
+            0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(249, 115, 22, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+        }
 
         /* Tables for dwells */
         /* Applied table-layout: fixed to mathematically guarantee column widths and prevent squishing */
@@ -298,8 +318,18 @@
                         </div>
                         
                         <!-- Action Button moved inside the grid to span the remaining 2 columns -->
-                        <div class="col-span-2 flex">
-                            <button id="btn-optimize" class="btn-optimize w-full h-full m-0 flex items-center justify-center" onclick="app.calculate()">Start Deep Optimization</button>
+                        <div class="col-span-2 flex gap-1.5">
+                            <!-- AutoStart Toggle Button -->
+                            <button id="btn-autostart" class="w-[88px] h-full m-0 flex flex-col items-center justify-center bg-blue-50 border border-blue-200 rounded-lg transition-all hover:bg-blue-100 shrink-0" onclick="app.toggleAutoStart()">
+                                <span class="text-[9px] font-bold text-slate-500 leading-tight mb-0.5">Auto Restart</span>
+                                <span id="autostart-status" class="text-[11px] font-black text-blue-600 leading-none">ON</span>
+                            </button>
+                            <!-- Main Start Optimization Button -->
+                            <!-- Added gap-0.5 for perfect breathing room between the two centered lines -->
+                            <button id="btn-optimize" class="btn-optimize flex-1 h-full m-0 flex flex-col items-center justify-center gap-0.5" onclick="app.calculate()">
+                                <span>Start</span>
+                                <span>Optimization</span>
+                            </button>
                         </div>
                     </div>
                     
@@ -593,6 +623,10 @@
                 this.adam_v = [];
                 this.adam_t = 0;
 
+                // AutoStart state
+                this.autoStart = true;
+                this.needsRestart = false;
+
                 // Canvas viewport state
                 this.zoom = 60;
                 this.offset = { x: 0, y: 150 };
@@ -652,6 +686,46 @@
                 return (this.activeTab === 'tps1' || this.activeTab === 'tps2') && this.importedRx && this.importedInf;
             }
 
+            /**
+             * Toggles the AutoStart feature ON or OFF.
+             * If turned ON while optimization is pending, it automatically starts calculating.
+             */
+            toggleAutoStart() {
+                this.autoStart = !this.autoStart;
+                const btn = document.getElementById('btn-autostart');
+                const status = document.getElementById('autostart-status');
+                
+                if (this.autoStart) {
+                    btn.className = "w-[88px] h-full m-0 flex flex-col items-center justify-center bg-blue-50 border border-blue-200 rounded-lg transition-all hover:bg-blue-100 shrink-0";
+                    status.innerText = "ON";
+                    status.className = "text-[11px] font-black text-blue-600 leading-none";
+                    if (this.needsRestart) this.calculate();
+                } else {
+                    btn.className = "w-[88px] h-full m-0 flex flex-col items-center justify-center bg-slate-100 border border-slate-300 rounded-lg transition-all hover:bg-slate-200 shrink-0";
+                    status.innerText = "OFF";
+                    status.className = "text-[11px] font-black text-slate-500 leading-none";
+                }
+            }
+
+            /**
+             * Visually updates the Start button to indicate a manual restart is required.
+             */
+            setNeedsRestart() {
+                this.needsRestart = true;
+                const btn = document.getElementById('btn-optimize');
+                btn.innerHTML = "<span>Re-Start</span><span>Optimization</span>";
+                btn.classList.add('needs-restart');
+            }
+
+            /**
+             * Clears the pending restart UI state.
+             */
+            clearNeedsRestart() {
+                this.needsRestart = false;
+                const btn = document.getElementById('btn-optimize');
+                btn.classList.remove('needs-restart');
+            }
+
             // Handles tab switching and UI state
             setTab(tab) {
                 this.activeTab = tab;
@@ -680,7 +754,7 @@
                     
                     this.isOptimizing = false;
                     this.buildGeometry();
-                    this.calculate();
+                    if(this.autoStart) this.calculate(); else this.setNeedsRestart();
                 } else {
                     // Both TPS modes behave similarly if data is imported
                     if(this.importedRx && this.importedInf) {
@@ -691,7 +765,7 @@
                         
                         this.isOptimizing = false;
                         this.buildGeometry();
-                        this.calculate();
+                        if(this.autoStart) this.calculate(); else this.setNeedsRestart();
                     } else {
                         // Show specific entry/paste form based on active TPS tab
                         if(tab === 'tps1') {
@@ -960,7 +1034,7 @@
                 this.isOptimizing = false;
                 this.generateDwellPositions(true);
                 this.buildGeometry();
-                this.calculate(); // Re-run optimization with new geometry
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart(); // Re-run optimization with new geometry if Auto is ON
             }
 
             // Handles Dome Angle preference changes
@@ -969,7 +1043,7 @@
                 document.getElementById('dome-angle-val').innerText = val + '°';
                 this.isOptimizing = false;
                 this.buildGeometry();
-                this.calculate();
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart();
             }
 
             // Handles Nominal Smoothness Preference changes
@@ -977,14 +1051,14 @@
                 if (val === undefined) val = document.getElementById('smoothSlider').value;
                 document.getElementById('smooth-val').innerText = val;
                 this.isOptimizing = false;
-                this.calculate();
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart();
             }
             
             // Handles changes to how far dwells should extend beyond the Tx length
             onDwellBeyondChange() {
                 this.isOptimizing = false;
                 this.generateDwellPositions(false); 
-                this.calculate();
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart();
             }
 
             // Automatically updates the 'Beyond Tx' input field if dwells are manually toggled
@@ -1027,7 +1101,7 @@
                 this.isOptimizing = false;
                 const btn = document.getElementById('btn-optimize');
                 btn.disabled = false;
-                btn.innerText = "Start Deep Optimization";
+                btn.innerHTML = "<span>Start</span><span>Optimization</span>";
                 
                 this.calculateDosesOnly(); // Fast update of visuals
             }
@@ -1071,7 +1145,7 @@
             // Triggers a full optimization run from scratch
             promptOptimization() {
                 this.isOptimizing = false;
-                this.calculate();
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart();
             }
 
             onTxLengthChange() { 
@@ -1079,7 +1153,7 @@
                 this.isOptimizing = false;
                 this.generateDwellPositions(false); 
                 this.centerView();
-                this.calculate(); 
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart(); 
             }
             
             onStepSizeChange() { 
@@ -1088,14 +1162,14 @@
                 
                 this.isOptimizing = false;
                 this.generateDwellPositions(false); 
-                this.calculate(); 
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart(); 
             }
             
             onGeometryChange() { 
                 this.isOptimizing = false;
                 this.generateDwellPositions(true); 
                 this.buildGeometry();
-                this.calculate();
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart();
             }
 
             // Generates the initial array of dwell positions based on step size and geometry
@@ -1139,7 +1213,7 @@
                 this.dwells[index].active = !this.dwells[index].active; 
                 this.updateBeyondTxFromDwells(); 
                 this.buildGeometry();
-                this.calculate();
+                if(this.autoStart) this.calculate(); else this.setNeedsRestart();
             }
 
             // User manually types a time value
@@ -1367,8 +1441,11 @@
             calculate() {
                 if (this.isOptimizing) return; 
                 
+                this.clearNeedsRestart(); // Clear the restart visual state
+                
                 const btn = document.getElementById('btn-optimize');
-                btn.disabled = true; btn.innerText = "Optimizing...";
+                btn.disabled = true; 
+                btn.innerHTML = "<span>Optimizing...</span>";
 
                 const p = this.getInputs();
                 
@@ -1392,7 +1469,8 @@
                     }
                 } else {
                     if(warningEl) warningEl.classList.remove('hidden');
-                    btn.disabled = false; btn.innerText = "Start Deep Optimization";
+                    btn.disabled = false; 
+                    btn.innerHTML = "<span>Start</span><span>Optimization</span>";
                     return; 
                 }
 
@@ -1680,7 +1758,8 @@
 
                     this.isOptimizing = false;
                     const btn = document.getElementById('btn-optimize');
-                    btn.disabled = false; btn.innerText = "Start Deep Optimization";
+                    btn.disabled = false; 
+                    btn.innerHTML = "<span>Start</span><span>Optimization</span>";
                     
                     this.updateDwellTable();
                 } else {
