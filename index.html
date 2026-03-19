@@ -2,13 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Changed viewport from width=device-width to fixed width=1200 to force desktop-like scaling on mobile devices -->
+    <meta name="viewport" content="width=1200">
     <title>DL-inspired Auto HDR Cylinder Optimizer</title>
 
     <!--
     =========================================================================================
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
+    [2026-03-19]
+    - System: Forced true desktop-scaling on mobile devices by setting the viewport meta tag to a fixed width of 1200px and enforcing min-width/min-height on the body. This prevents mobile Safari from squishing the UI and eliminates the need to manually "Request Desktop Website".
     [2026-03-18]
     - UI/UX: Styled all numeric input fields (.side-input, .table-time-input) with explicit white backgrounds, subtle borders, and inner shadows to clearly indicate they are editable, matching the "Beyond Tx" field.
     - UI/UX: Fixed vertical centering of the text in the "Start Optimization" and "Re-Start Optimization" buttons. Removed explicit vertical padding to allow flexbox (justify-center) to achieve perfect mathematical vertical alignment, and added a slight gap between the two text lines for better readability.
@@ -70,7 +73,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap');
         
         /* Base styling */
-        body { background-color: #f1f5f9; color: #1e293b; font-family: 'Inter', sans-serif; overflow: hidden; }
+        /* Added min-width and min-height to physically block the UI from crushing on small screens */
+        body { background-color: #f1f5f9; color: #1e293b; font-family: 'Inter', sans-serif; overflow: hidden; min-width: 1200px; min-height: 700px; }
         
         /* Reusable UI Component Styles */
         .premium-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
