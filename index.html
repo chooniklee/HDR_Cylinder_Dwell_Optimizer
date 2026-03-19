@@ -11,6 +11,7 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-03-19]
+    - Feature/Canvas: Implemented multi-touch event listeners (touchstart, touchmove, touchend) to support 1-finger panning and 2-finger pinch-to-zoom directly on the canvas for mobile/tablet users.
     - System: Forced true desktop-scaling on mobile devices by setting the viewport meta tag to a fixed width of 1200px and enforcing min-width/min-height on the body. This prevents mobile Safari from squishing the UI and eliminates the need to manually "Request Desktop Website".
     [2026-03-18]
     - UI/UX: Styled all numeric input fields (.side-input, .table-time-input) with explicit white backgrounds, subtle borders, and inner shadows to clearly indicate they are editable, matching the "Beyond Tx" field.
@@ -638,6 +639,10 @@
                 this.lastMouse = { x: 0, y: 0 };
                 this.hoveredPoint = null;
 
+                // Touch state for mobile panning/zooming
+                this.lastTouchPan = null;
+                this.lastTouchDist = null;
+
                 this.activeTab = 'standard';
                 this.importedRx = null;
                 this.importedInf = null;
@@ -993,6 +998,65 @@
                     if (this.showDebug) this.checkHover(mx, my);
                 });
                 window.addEventListener('mouseup', () => this.isDragging = false);
+
+                // --- MOBILE TOUCH EVENTS FOR CANVAS INTERACTION ---
+                // Handle 1-finger pan and 2-finger pinch-to-zoom
+                this.canvas.addEventListener('touchstart', e => {
+                    if (e.touches.length === 1) {
+                        this.lastTouchPan = { x: e.touches.clientX, y: e.touches.clientY };
+                    } else if (e.touches.length === 2) {
+                        const dx = e.touches.clientX - e.touches.clientX;
+                        const dy = e.touches.clientY - e.touches.clientY;
+                        this.lastTouchDist = Math.sqrt(dx*dx + dy*dy);
+                    }
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchmove', e => {
+                    e.preventDefault(); // Prevent whole-page scrolling when interacting directly with the canvas
+
+                    if (e.touches.length === 1 && this.lastTouchPan) {
+                        // 1-Finger Panning
+                        this.offset.x += (e.touches.clientX - this.lastTouchPan.x);
+                        this.offset.y += (e.touches.clientY - this.lastTouchPan.y);
+                        this.lastTouchPan = { x: e.touches.clientX, y: e.touches.clientY };
+                    } else if (e.touches.length === 2 && this.lastTouchDist) {
+                        // 2-Finger Pinch-to-Zoom
+                        const dx = e.touches.clientX - e.touches.clientX;
+                        const dy = e.touches.clientY - e.touches.clientY;
+                        const newDist = Math.sqrt(dx*dx + dy*dy);
+
+                        // Find the center point between the two fingers (Screen Coordinates)
+                        const mx = (e.touches.clientX + e.touches.clientX) / 2;
+                        const my = (e.touches.clientY + e.touches.clientY) / 2;
+
+                        const rect = this.canvas.getBoundingClientRect();
+                        const canvasX = mx - rect.left;
+                        const canvasY = my - rect.top;
+
+                        // Convert to World Coordinates
+                        const worldX = (canvasX - this.offset.x) / this.zoom;
+                        const worldY = (canvasY - this.offset.y) / this.zoom;
+
+                        // Calculate Zoom multiplier based on pinch distance change
+                        const zoomFactor = newDist / this.lastTouchDist;
+                        this.zoom *= zoomFactor;
+
+                        // Adjust offset to keep the pinch center anchored perfectly
+                        this.offset.x = canvasX - (worldX * this.zoom);
+                        this.offset.y = canvasY - (worldY * this.zoom);
+
+                        this.lastTouchDist = newDist; // Update distance for next frame
+                    }
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchend', e => {
+                    this.lastTouchPan = null;
+                    this.lastTouchDist = null;
+                    // If one finger is lifted during a pinch, reset the pan anchor for the remaining finger smoothly
+                    if (e.touches.length === 1) {
+                        this.lastTouchPan = { x: e.touches.clientX, y: e.touches.clientY };
+                    }
+                }, { passive: false });
             }
 
             // Detects if the user's mouse is near a calculation point to show its dose tooltip
