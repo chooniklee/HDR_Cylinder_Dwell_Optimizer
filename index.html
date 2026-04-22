@@ -10,6 +10,10 @@
     =========================================================================================
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
+    [2026-04-22]
+    - Algorithm: Completely removed all legacy TPS 3D coordinate parsing, coordinate transformation functions, and related state variables (isTPSMode, setTab, importTPSEntry, etc.) to streamline the codebase as they are no longer used.
+    - UI/UX: Removed TPS #1 and TPS #2 tabs from the sidebar to simplify the interface as requested.
+    - Feature: Added a "Copy" button above the Dwells table that copies active dwell positions and times to the clipboard in a comma-separated format for easy Excel pasting.
     [2026-03-19]
     - Feature/Canvas: Implemented multi-touch event listeners (touchstart, touchmove, touchend) to support 1-finger panning and 2-finger pinch-to-zoom directly on the canvas for mobile/tablet users.
     - System: Forced true desktop-scaling on mobile devices by setting the viewport meta tag to a fixed width of 1200px and enforcing min-width/min-height on the body. This prevents mobile Safari from squishing the UI and eliminates the need to manually "Request Desktop Website".
@@ -182,70 +186,10 @@
         <!-- Left Sidebar: Inputs & Dwell Times -->
         <!-- Increased width back to 384px to prevent text truncation in the 3x2 grid -->
         <aside class="w-[384px] border border-slate-200 bg-white flex flex-col z-20 shadow-sm rounded-xl relative shrink-0">
-            <div class="grid grid-cols-3 bg-slate-50 border-b border-slate-200 shrink-0 rounded-t-xl overflow-hidden">
-                <button id="tab-btn-standard" class="py-2.5 text-[11px] font-bold uppercase text-blue-600 border-b-2 border-blue-600 bg-white" onclick="app.setTab('standard')">Standard</button>
-                <button id="tab-btn-tps1" class="py-2.5 text-[11px] font-bold uppercase text-slate-400 border-b-2 border-transparent hover:text-slate-600" onclick="app.setTab('tps1')">TPS #1</button>
-                <button id="tab-btn-tps2" class="py-2.5 text-[11px] font-bold uppercase text-slate-400 border-b-2 border-transparent hover:text-slate-600" onclick="app.setTab('tps2')">TPS #2</button>
-            </div>
             
-            <!-- TPS #1 Entry Area (Visible only in TPS #1 tab before importing data) -->
-            <div id="tps1-entry-area" class="flex-1 overflow-y-auto p-4 space-y-4 hidden bg-slate-50">
-                <h3 class="text-[12px] font-bold text-slate-700 border-b pb-1">Applicator Coordinates</h3>
-                <div class="grid grid-cols-3 gap-2">
-                    <span class="col-span-3 text-[10px] font-bold text-slate-500">Geometry Point #1 (cm)</span>
-                    <input type="number" id="tps-a1-x" placeholder="X" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    <input type="number" id="tps-a1-y" placeholder="Y" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    <input type="number" id="tps-a1-z" placeholder="Z" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    
-                    <span class="col-span-3 text-[10px] font-bold text-slate-500 mt-1">Geometry Point #2 (cm)</span>
-                    <input type="number" id="tps-a2-x" placeholder="X" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    <input type="number" id="tps-a2-y" placeholder="Y" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    <input type="number" id="tps-a2-z" placeholder="Z" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                </div>
-
-                <h3 class="text-[12px] font-bold text-slate-700 border-b pb-1 mt-4">Reference Points</h3>
-                <div class="grid grid-cols-3 gap-2">
-                    <span class="col-span-3 text-[10px] font-bold text-slate-500">Rx Point (cm)</span>
-                    <input type="number" id="tps-rx-x" placeholder="X" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    <input type="number" id="tps-rx-y" placeholder="Y" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    <input type="number" id="tps-rx-z" placeholder="Z" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    
-                    <span class="col-span-3 text-[10px] font-bold text-slate-500 mt-1">Inf Point (cm)</span>
-                    <input type="number" id="tps-inf-x" placeholder="X" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    <input type="number" id="tps-inf-y" placeholder="Y" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                    <input type="number" id="tps-inf-z" placeholder="Z" step="0.01" class="no-spin border border-slate-200 rounded p-1 text-center text-[12px] outline-none focus:border-blue-500 bg-white">
-                </div>
+            <!-- Shared Parameters Area -->
+            <div id="shared-params-area" class="flex-1 overflow-y-auto px-4 py-3 space-y-2 block">
                 
-                <button class="btn-optimize mt-2" onclick="app.importTPSEntry()">Transform & Run Optimizer</button>
-                <div class="text-[10px] text-slate-500 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <strong>Note:</strong> Geometry Point #1 is translated to (0,0,0.65). Rx and Inf are transformed relative to the vector from Point #1 to Point #2.
-                </div>
-            </div>
-
-            <!-- TPS #2 Paste Area (Visible only in TPS #2 tab before importing data) -->
-            <div id="tps2-paste-area" class="flex-1 overflow-y-auto p-4 space-y-4 hidden bg-slate-50">
-                <div class="space-y-2">
-                    <label class="input-label text-slate-600">Paste TPS Parameters Here</label>
-                    <textarea id="tps2-input" class="w-full h-56 p-2 text-[10px] font-mono text-slate-600 border border-slate-300 rounded-lg shadow-inner focus:outline-none focus:border-blue-500 resize-none" placeholder="Cylinder_Diameter_cm: 3.00&#10;Treatment_Length_cm: 4.00&#10;Prescription_Depth: Surface (0.0 cm)&#10;Dwell_Step_Size_cm: 0.50&#10;Rx_Aligned_xyz_cm: -1.40, 0.55, 1.37&#10;Inf_Aligned_xyz_cm: -1.40, 0.55, 3.36"></textarea>
-                </div>
-                <button class="btn-optimize" onclick="app.parseTPSData2()">Import & Run Optimizer</button>
-                <div class="text-[10px] text-slate-500 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <strong>Note:</strong> Importing TPS data switches the engine to 3D mode. Z coordinates will be adjusted automatically (+0.65cm to match the first dwell position).
-                </div>
-            </div>
-
-            <!-- Shared Parameters Area (Visible in Standard mode OR TPS mode after importing) -->
-            <div id="shared-params-area" class="flex-1 overflow-y-auto px-4 py-2 space-y-2 block">
-                
-                <!-- Active TPS Badge (Hidden by default) -->
-                <div id="tps-active-badge" class="hidden items-center justify-between bg-indigo-50 border border-indigo-200 p-2 rounded-lg mb-2">
-                    <div class="flex items-center gap-2">
-                        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-                        <span class="text-[11px] font-bold text-indigo-700">TPS 3D Geometry Active</span>
-                    </div>
-                    <button onclick="app.clearTPSEntry()" class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 bg-white px-2 py-0.5 rounded border border-indigo-200 shadow-sm transition-all">Clear</button>
-                </div>
-
                 <!-- Inputs Section -->
                 <section class="space-y-2">
                     <!-- Removed "Inputs" header completely to save vertical space -->
@@ -348,6 +292,11 @@
                     <div class="flex items-center justify-between mb-2">
                         <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2">
                             <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div> Dwells
+                            <!-- Added Copy Button for Excel export -->
+                            <button onclick="app.copyDwellsToClipboard()" class="ml-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 px-2 py-0.5 rounded text-[10px] shadow-sm transition-all flex items-center gap-1 active:bg-slate-100" title="Copy Dwell Data">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy
+                            </button>
                         </h2>
                         <div class="flex items-center gap-2 bg-[#f8fafc] border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
                             <span class="text-[12px] font-bold text-slate-600">Beyond Tx (cm):</span>
@@ -643,10 +592,6 @@
                 this.lastTouchPan = null;
                 this.lastTouchDist = null;
 
-                this.activeTab = 'standard';
-                this.importedRx = null;
-                this.importedInf = null;
-
                 // Initialize environment
                 this.initEventListeners();
                 this.resize();
@@ -690,11 +635,6 @@
                 }
             }
 
-            // Checks if we are currently operating in 3D TPS Mode
-            isTPSMode() {
-                return (this.activeTab === 'tps1' || this.activeTab === 'tps2') && this.importedRx && this.importedInf;
-            }
-
             /**
              * Toggles the AutoStart feature ON or OFF.
              * If turned ON while optimization is pending, it automatically starts calculating.
@@ -733,208 +673,6 @@
                 this.needsRestart = false;
                 const btn = document.getElementById('btn-optimize');
                 btn.classList.remove('needs-restart');
-            }
-
-            // Handles tab switching and UI state
-            setTab(tab) {
-                this.activeTab = tab;
-                const btnStd = document.getElementById('tab-btn-standard');
-                const btnTps1 = document.getElementById('tab-btn-tps1');
-                const btnTps2 = document.getElementById('tab-btn-tps2');
-                const entryArea1 = document.getElementById('tps1-entry-area');
-                const entryArea2 = document.getElementById('tps2-paste-area');
-                const paramsArea = document.getElementById('shared-params-area');
-                const badge = document.getElementById('tps-active-badge');
-
-                // Reset button styles
-                [btnStd, btnTps1, btnTps2].forEach(btn => {
-                    if (btn) btn.className = "py-2.5 text-[11px] font-bold uppercase text-slate-400 border-b-2 border-transparent hover:text-slate-600";
-                });
-                
-                // Highlight active button
-                const activeBtn = tab === 'standard' ? btnStd : (tab === 'tps1' ? btnTps1 : btnTps2);
-                if(activeBtn) activeBtn.className = "py-2.5 text-[11px] font-bold uppercase text-blue-600 border-b-2 border-blue-600 bg-white";
-
-                if(tab === 'standard') {
-                    if(entryArea1) entryArea1.classList.replace('block', 'hidden');
-                    if(entryArea2) entryArea2.classList.replace('block', 'hidden');
-                    if(paramsArea) paramsArea.classList.replace('hidden', 'block');
-                    if(badge) badge.classList.replace('flex', 'hidden');
-                    
-                    this.isOptimizing = false;
-                    this.buildGeometry();
-                    if(this.autoStart) this.calculate(); else this.setNeedsRestart();
-                } else {
-                    // Both TPS modes behave similarly if data is imported
-                    if(this.importedRx && this.importedInf) {
-                        if(entryArea1) entryArea1.classList.replace('block', 'hidden');
-                        if(entryArea2) entryArea2.classList.replace('block', 'hidden');
-                        if(paramsArea) paramsArea.classList.replace('hidden', 'block');
-                        if(badge) badge.classList.replace('hidden', 'flex');
-                        
-                        this.isOptimizing = false;
-                        this.buildGeometry();
-                        if(this.autoStart) this.calculate(); else this.setNeedsRestart();
-                    } else {
-                        // Show specific entry/paste form based on active TPS tab
-                        if(tab === 'tps1') {
-                            if(entryArea1) entryArea1.classList.replace('hidden', 'block');
-                            if(entryArea2) entryArea2.classList.replace('block', 'hidden');
-                        } else {
-                            if(entryArea1) entryArea1.classList.replace('block', 'hidden');
-                            if(entryArea2) entryArea2.classList.replace('hidden', 'block');
-                        }
-                        if(paramsArea) paramsArea.classList.replace('block', 'hidden');
-                    }
-                }
-            }
-
-            importTPSEntry() {
-                const getPt = (prefix) => ({
-                    x: parseFloat(document.getElementById(`tps-${prefix}-x`).value),
-                    y: parseFloat(document.getElementById(`tps-${prefix}-y`).value),
-                    z: parseFloat(document.getElementById(`tps-${prefix}-z`).value)
-                });
-
-                const A1 = getPt('a1');
-                const A2 = getPt('a2');
-                const Rx = getPt('rx');
-                const Inf = getPt('inf');
-
-                // Validate if all points have numbers
-                const allPts = [A1, A2, Rx, Inf];
-                if (allPts.some(pt => isNaN(pt.x) || isNaN(pt.y) || isNaN(pt.z))) {
-                    alert("Please fill in all X, Y, Z coordinates for the 4 points.");
-                    return;
-                }
-
-                // Create a local coordinate system based on the applicator vector
-                const dx = A2.x - A1.x;
-                const dy = A2.y - A1.y;
-                const dz = A2.z - A1.z;
-                const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                
-                if (len === 0) {
-                    alert("App #1 and App #2 cannot be exactly the same point.");
-                    return;
-                }
-
-                // Z direction (Applicator axis)
-                const Z_dir = { x: dx/len, y: dy/len, z: dz/len };
-                
-                // Construct orthogonal X direction
-                let up = { x: 0, y: 1, z: 0 };
-                if (Math.abs(Z_dir.y) > 0.999) up = { x: 1, y: 0, z: 0 }; // Avoid singularity
-                
-                let X_dir = {
-                    x: up.y * Z_dir.z - up.z * Z_dir.y,
-                    y: up.z * Z_dir.x - up.x * Z_dir.z,
-                    z: up.x * Z_dir.y - up.y * Z_dir.x
-                };
-                const xLen = Math.sqrt(X_dir.x*X_dir.x + X_dir.y*X_dir.y + X_dir.z*X_dir.z);
-                X_dir = { x: X_dir.x/xLen, y: X_dir.y/xLen, z: X_dir.z/xLen };
-                
-                // Construct orthogonal Y direction (Z x X)
-                const Y_dir = {
-                    x: Z_dir.y * X_dir.z - Z_dir.z * X_dir.y,
-                    y: Z_dir.z * X_dir.x - Z_dir.x * X_dir.z,
-                    z: Z_dir.x * X_dir.y - Z_dir.y * X_dir.x
-                };
-
-                // Function to transform TPS point into our canvas 3D space
-                const transform = (pt) => {
-                    // Translate A1 to origin
-                    const vx = pt.x - A1.x;
-                    const vy = pt.y - A1.y;
-                    const vz = pt.z - A1.z;
-                    
-                    // Project onto local axes using Dot Product
-                    const locX = vx * X_dir.x + vy * X_dir.y + vz * X_dir.z;
-                    const locY = vx * Y_dir.x + vy * Y_dir.y + vz * Y_dir.z;
-                    const locZ = vx * Z_dir.x + vy * Z_dir.y + vz * Z_dir.z;
-                    
-                    // Add 0.65cm offset so A1 matches the apex distance of the first dwell
-                    // Subtract 0.35cm to shift the point UP vertically (towards the dome apex)
-                    return { x: locX, y: locY, z: locZ + 0.65 - 0.35 };
-                };
-
-                this.importedRx = { ...transform(Rx), label: 'Rx Point (TPS)' };
-                this.importedInf = { ...transform(Inf), label: 'Inf Point (TPS)' };
-                
-                // Force Beyond Tx to 1.0 cm in TPS mode
-                document.getElementById('dwellBeyond').value = "1.0";
-                
-                // Automatically generate 3D dwells (0, 0, Z) 
-                this.generateDwellPositions(false);
-                
-                // Stay on the TPS tab and refresh the view
-                this.setTab('tps1');
-            }
-
-            parseTPSData2() {
-                const text = document.getElementById('tps2-input').value;
-                const lines = text.split('\n');
-                
-                let importedRx = null;
-                let importedInf = null;
-                
-                for(let line of lines) {
-                    line = line.trim();
-                    
-                    if(line.startsWith('Cylinder_Diameter_cm:')) {
-                        const val = parseFloat(line.split(':')[1]);
-                        this.currentDiam = val; 
-                        document.querySelectorAll('.diam-btn').forEach(b => {
-                            b.classList.remove('active-diam');
-                            if(parseFloat(b.innerText) === val) b.classList.add('active-diam');
-                        });
-                    }
-                    if(line.startsWith('Treatment_Length_cm:')) {
-                        document.getElementById('txLength').value = parseFloat(line.split(':')[1]).toFixed(1);
-                    }
-                    if(line.startsWith('Dwell_Step_Size_cm:')) {
-                        document.getElementById('stepSize').value = parseFloat(line.split(':')[1]).toFixed(2);
-                    }
-                    if(line.startsWith('Rx_Aligned_xyz_cm:')) {
-                        const parts = line.split(':')[1].split(',');
-                        // Add +0.65cm offset to match the applicator apex coordinate system (First dwell is at Z=0.65)
-                        importedRx = { x: parseFloat(parts[0]), y: parseFloat(parts[1]), z: parseFloat(parts[2]) + 0.65, label: 'Rx Point (TPS)' };
-                    }
-                    if(line.startsWith('Inf_Aligned_xyz_cm:')) {
-                        const parts = line.split(':')[1].split(',');
-                        // Add +0.65cm offset to match the applicator apex coordinate system (First dwell is at Z=0.65)
-                        importedInf = { x: parseFloat(parts[0]), y: parseFloat(parts[1]), z: parseFloat(parts[2]) + 0.65, label: 'Inf Point (TPS)' };
-                    }
-                }
-                
-                if(importedRx && importedInf) {
-                    this.importedRx = importedRx;
-                    this.importedInf = importedInf;
-                    
-                    // Force Beyond Tx to 1.0 cm in TPS mode
-                    document.getElementById('dwellBeyond').value = "1.0";
-                    
-                    // Automatically generate 3D dwells (0, 0, Z) 
-                    this.generateDwellPositions(false);
-                    
-                    // Stay on the TPS tab and refresh the view
-                    this.setTab('tps2');
-                } else {
-                    alert("Could not parse valid TPS data. Please check the format.");
-                }
-            }
-
-            clearTPSEntry() {
-                this.importedRx = null;
-                this.importedInf = null;
-                // Clear the input fields for TPS #1
-                const inputs = document.querySelectorAll('#tps1-entry-area input');
-                inputs.forEach(inp => inp.value = '');
-                // Clear the textarea for TPS #2
-                const ta = document.getElementById('tps2-input');
-                if(ta) ta.value = '';
-                
-                this.setTab(this.activeTab);
             }
 
             // Centers the cylinder view on the canvas
@@ -1337,6 +1075,40 @@
                 if (totalEl) totalEl.innerText = totalTime.toFixed(2);
             }
 
+            // Copies active dwell positions and times to the clipboard in a comma-separated format
+            copyDwellsToClipboard() {
+                const activeDwells = this.dwells.filter(d => d.active);
+                if (activeDwells.length === 0) {
+                    return;
+                }
+                
+                // Format: Position, Time (with newline for Excel paste)
+                const text = activeDwells.map(d => `${d.pos.toFixed(1)}, ${d.time.toFixed(2)}`).join('\n');
+                
+                // Fallback to execCommand for iframe compatibility
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    
+                    // Visual feedback on the button
+                    const btn = document.querySelector('button[onclick="app.copyDwellsToClipboard()"]');
+                    if (btn) {
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = `<span class="text-green-600 font-bold">Copied!</span>`;
+                        setTimeout(() => btn.innerHTML = originalHTML, 1500);
+                    }
+                } catch (err) {
+                    console.error("Failed to copy", err);
+                } finally {
+                    document.body.removeChild(textArea);
+                }
+            }
+
             // Re-renders the HTML table of dwells on the left
             updateDwellTable() {
                 const activeDwells = this.dwells.filter(d => d.active);
@@ -1404,15 +1176,11 @@
                 const zRx = p.txLength / 2.0;
                 const zInf = p.txLength;
                 
-                // 1. Hard Points: Must exactly match Rx Dose (Use 3D Imported Data if available)
-                if (this.isTPSMode()) {
-                    this.hardPoints = [ this.importedRx, this.importedInf ];
-                } else {
-                    this.hardPoints = [
-                        { x: this.getRxX(zRx, radius, p.rxDepth), y: 0, z: zRx, label: 'Rx Point (Mid)' },
-                        { x: this.getRxX(zInf, radius, p.rxDepth), y: 0, z: zInf, label: 'Inf Point (End)' }
-                    ];
-                }
+                // 1. Hard Points: Must exactly match Rx Dose
+                this.hardPoints = [
+                    { x: this.getRxX(zRx, radius, p.rxDepth), y: 0, z: zRx, label: 'Rx Point (Mid)' },
+                    { x: this.getRxX(zInf, radius, p.rxDepth), y: 0, z: zInf, label: 'Inf Point (End)' }
+                ];
                 
                 // 2. Dome Optimization Points
                 const angleThresholdRad = (p.domeAngle * Math.PI) / 180;
@@ -2099,8 +1867,8 @@
                         // Draw Hard Anchors and their exact dose tooltips
                         if (this.hardPoints) {
                             this.hardPoints.forEach(pt => {
-                                // For 3D imported points, calculate the 2D radial projection for plotting on the X-Z canvas
-                                const displayX = this.isTPSMode() ? Math.sqrt(pt.x*pt.x + (pt.y||0)*(pt.y||0)) : pt.x;
+                                // 2D radial projection for plotting on the X-Z canvas
+                                const displayX = pt.x;
                                 
                                 this.ctx.fillStyle = '#a855f7'; 
                                 this.ctx.beginPath(); this.ctx.arc(displayX * this.zoom, pt.z * this.zoom, 4.5, 0, Math.PI * 2); this.ctx.fill();
