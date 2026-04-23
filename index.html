@@ -11,6 +11,7 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-04-22]
+    - Integration: Expanded `parseUrlParameters()` to accept and apply 'length' (Treatment Length) and 'depth' (Rx Depth) parameters from ESAPI, enabling a seamless one-click workflow from Eclipse.
     - UI/UX: Restyled the "Copy" button with an Excel-inspired theme (green background, white text) to intuitively signify its export functionality. Also adjusted the "Copied!" feedback text to white for contrast.
     - UI/UX: Increased the size of the "Copy" button above the Dwells table (larger icon, text, and padding) for better visibility and clickability.
     - Integration: Added `parseUrlParameters()` to intercept and apply the 'diameter' parameter passed via URL query strings from external scripts like ESAPI.
@@ -632,7 +633,7 @@
                 // Keep decimal precision clean
                 let decimals = 0;
                 const stepStr = inputEl.getAttribute('step');
-                if (stepStr && stepStr.includes('.')) decimals = stepStr.split('.')[1].length;
+                if (stepStr && stepStr.includes('.')) decimals = stepStr.split('.').length;
                 inputEl.value = val.toFixed(decimals);
 
                 // Trigger the relevant callback function if provided
@@ -647,10 +648,13 @@
              * with pre-configured patient specific parameters.
              */
             parseUrlParameters() {
-                // Parse the query string from the URL (e.g., "?diameter=2.5")
+                // Parse the query string from the URL to extract all parameters passed by the ESAPI script
                 const urlParams = new URLSearchParams(window.location.search);
                 const diameterParam = urlParams.get('diameter');
+                const lengthParam = urlParams.get('length');
+                const depthParam = urlParams.get('depth');
                 
+                // Process and apply the Cylinder Diameter
                 if (diameterParam) {
                     // Convert the parsed string parameter into a floating-point number
                     const initialDiameter = parseFloat(diameterParam);
@@ -671,9 +675,28 @@
                         });
                     }
                 }
-                
-                // Note: You can easily expand this method to parse other parameters 
-                // like txLength, rxDose, or stepSize in the future!
+
+                // Process and apply the Treatment Length
+                if (lengthParam) {
+                    const initialLength = parseFloat(lengthParam);
+                    if (!isNaN(initialLength)) {
+                        console.log("Configuration received from URL/ESAPI - Treatment Length:", initialLength);
+                        // Update the corresponding UI input field
+                        const txLengthInput = document.getElementById('txLength');
+                        if (txLengthInput) txLengthInput.value = initialLength.toFixed(1);
+                    }
+                }
+
+                // Process and apply the Prescription Depth (Treatment Depth)
+                if (depthParam) {
+                    const initialDepth = parseFloat(depthParam);
+                    if (!isNaN(initialDepth)) {
+                        console.log("Configuration received from URL/ESAPI - Prescription Depth:", initialDepth);
+                        // Update the corresponding UI input field
+                        const rxDepthInput = document.getElementById('rxDepth');
+                        if (rxDepthInput) rxDepthInput.value = initialDepth.toFixed(1);
+                    }
+                }
             }
 
             /**
