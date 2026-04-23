@@ -10,6 +10,8 @@
     =========================================================================================
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
+    [2026-04-23]
+    - Feature: Modified clipboard export format in `copyDwellsToClipboard()` to use Tab (\t) separation instead of commas. This ensures native column-separated pasting into Microsoft Excel.
     [2026-04-22]
     - Integration: Expanded `parseUrlParameters()` to accept and apply 'length' (Treatment Length) and 'depth' (Rx Depth) parameters from ESAPI, enabling a seamless one-click workflow from Eclipse.
     - UI/UX: Restyled the "Copy" button with an Excel-inspired theme (green background, white text) to intuitively signify its export functionality. Also adjusted the "Copied!" feedback text to white for contrast.
@@ -1139,15 +1141,15 @@
                 if (totalEl) totalEl.innerText = totalTime.toFixed(2);
             }
 
-            // Copies active dwell positions and times to the clipboard in a comma-separated format
+            // Copies active dwell positions and times to the clipboard in an Excel-friendly format
             copyDwellsToClipboard() {
                 const activeDwells = this.dwells.filter(d => d.active);
                 if (activeDwells.length === 0) {
                     return;
                 }
                 
-                // Format: Position, Time (with newline for Excel paste)
-                const text = activeDwells.map(d => `${d.pos.toFixed(1)}, ${d.time.toFixed(2)}`).join('\n');
+                // Format: Position and Time separated by a Tab (\t) character for native Excel column parsing
+                const text = activeDwells.map(d => `${d.pos.toFixed(1)}\t${d.time.toFixed(2)}`).join('\n');
                 
                 // Fallback to execCommand for iframe compatibility
                 const textArea = document.createElement("textarea");
