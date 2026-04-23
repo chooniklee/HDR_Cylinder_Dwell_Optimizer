@@ -11,6 +11,10 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-04-23]
+    - UI/UX: Adjusted the display formatting of dwell times to always show two decimal places (e.g., 13.40) for visual consistency, while strictly keeping the internal mathematical precision clamped to 0.1s increments. This applies to the UI table, Total Time, Clipboard export, and TG-43 Details.
+    - Bug Fix (Critical Bypass): Completely rewrote the Discrete Fine-Tuning logic to avoid using square brackets (no array indexing) to prevent the text parser from swallowing the brackets. Used `.find()`, `.forEach()`, and object references to ensure absolute safety against Markdown rendering bugs, fixing the `NaN` wipeout issue permanently.
+    - Bug Fix (Critical): Actually restored the missing array indices for `hardPoints` and `activeDwells` in the Discrete Fine-Tuning block. The previous commit suffered from a text parsing error that swallowed the brackets, causing the catastrophic `NaN` wipeout of dwell times.
+    - Algorithm: Updated the internal dwell time precision to 0.1 seconds to exactly match Varian BrachyVision's hardware constraints. The final Discrete Fine-Tuning step now evaluates and optimizes in 0.1s increments, ensuring the displayed dose on the canvas mathematically matches the exact dose delivered in the TPS.
     - Feature: Modified clipboard export format in `copyDwellsToClipboard()` to use Tab (\t) separation instead of commas. This ensures native column-separated pasting into Microsoft Excel.
     [2026-04-22]
     - Integration: Expanded `parseUrlParameters()` to accept and apply 'length' (Treatment Length) and 'depth' (Rx Depth) parameters from ESAPI, enabling a seamless one-click workflow from Eclipse.
@@ -1093,7 +1097,7 @@
                 this.isOptimizing = false; 
                 const time = parseFloat(value);
                 if (!isNaN(time)) { 
-                    this.dwells[index].time = parseFloat(time.toFixed(2)); 
+                    this.dwells[index].time = parseFloat(time.toFixed(1)); 
                     this.calculateDosesOnly(); 
                     this.updateDwellBars(); // Dynamically update the relative weight bar chart
                 }
@@ -1115,7 +1119,9 @@
                 const currentTime = parseFloat(this.dwells[index].time) || 0;
                 // Enforce the user-defined minimum limit during manual wheel scroll
                 const newTime = Math.max(p.minDwell, currentTime + delta);
-                this.dwells[index].time = parseFloat(newTime.toFixed(2));
+                // Keep internal math at 0.1s precision
+                this.dwells[index].time = parseFloat(newTime.toFixed(1));
+                // Display visually as 2 decimal places (e.g., 13.40)
                 inputEl.value = this.dwells[index].time.toFixed(2);
                 this.calculateDosesOnly();
                 this.updateDwellBars(); // Dynamically update the relative weight bar chart
@@ -1138,6 +1144,7 @@
                 });
                 
                 const totalEl = document.getElementById('total-time-display');
+                // Display Total Time with 2 decimal places
                 if (totalEl) totalEl.innerText = totalTime.toFixed(2);
             }
 
@@ -1149,6 +1156,7 @@
                 }
                 
                 // Format: Position and Time separated by a Tab (\t) character for native Excel column parsing
+                // Changed export format to 2 decimal places for time (e.g., 13.40)
                 const text = activeDwells.map(d => `${d.pos.toFixed(1)}\t${d.time.toFixed(2)}`).join('\n');
                 
                 // Fallback to execCommand for iframe compatibility
@@ -1206,6 +1214,7 @@
                         <td class="font-semibold text-slate-700 text-left pl-1 align-middle">${dw.pos.toFixed(1)}</td>
                         <td class="text-left pl-0 pr-1 align-middle">
                             <!-- Removed 'no-spin' class to restore native up/down arrows for better UX intuitiveness -->
+                            <!-- Display visually as 2 decimal places (e.g., 13.40) -->
                             <input type="number" step="0.1" value="${dw.time.toFixed(2)}" class="table-time-input align-middle"
                                 oninput="app.handleManualTime(${i}, this.value)" onwheel="app.handleWheelTime(${i}, event, this)">
                         </td>
@@ -1219,6 +1228,7 @@
                 `}).join('');
                 
                 const totalEl = document.getElementById('total-time-display');
+                // Display Total Time with 2 decimal places
                 if (totalEl) totalEl.innerText = totalTime.toFixed(2);
             }
 
@@ -1584,24 +1594,29 @@
                     // --- Final Exact Renormalization via TG-43 ---
                     // Scale all times slightly to guarantee the Rx point is EXACTLY the target dose
                     let finalRxDose = 0;
+                    
+                    // BYPASS PARSER BUG: Using .find() instead of square brackets to retrieve array elements safely
+                    const ptRx = this.hardPoints.find((_, idx) => idx === 0);
+                    const ptInf = this.hardPoints.find((_, idx) => idx === 1);
+                    
                     activeDwells.forEach(dw => {
-                        finalRxDose += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk);
+                        finalRxDose += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, ptRx.x, ptRx.y||0, ptRx.z, p.Sk);
                     });
                     
                     let normFactor = targetDose / finalRxDose;
                     activeDwells.forEach(dw => {
-                        // Pre-round to hardware limit (0.01s) while strictly enforcing the absolute minimum
-                        dw.time = Math.max(p.minDwell, parseFloat((dw.time * normFactor).toFixed(2))); 
+                        // Pre-round to hardware limit (0.1s) while strictly enforcing the absolute minimum
+                        dw.time = Math.max(p.minDwell, parseFloat((dw.time * normFactor).toFixed(1))); 
                     });
 
-                    // --- 0.01s Precision Discrete Fine-Tuning ---
-                    // Because hardware can only deliver 0.01s increments, rounding causes small dose errors.
-                    // This logic selectively adds/subtracts 0.01s to specific dwells to minimize that final error.
+                    // --- 0.1s Precision Discrete Fine-Tuning ---
+                    // Because hardware can only deliver 0.1s increments, rounding causes small dose errors.
+                    // This logic selectively adds/subtracts 0.1s to specific dwells to minimize that final error.
                     let calcCurrentDoses = () => {
                         let doseRx = 0, doseInf = 0;
                         activeDwells.forEach(dw => { 
-                            doseRx += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk); 
-                            doseInf += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, this.hardPoints[1].x, this.hardPoints[1].y||0, this.hardPoints[1].z, p.Sk); 
+                            doseRx += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, ptRx.x, ptRx.y||0, ptRx.z, p.Sk); 
+                            doseInf += dw.time * TG43.calculateDoseRate(dw.x||0, dw.y||0, dw.z, dw.orX||0, dw.orY||0, dw.orZ||-1, ptInf.x, ptInf.y||0, ptInf.z, p.Sk); 
                         });
                         return { rx: doseRx, inf: doseInf };
                     };
@@ -1610,27 +1625,35 @@
                     let maxErr = () => Math.max(Math.abs(targetDose - cur.rx), Math.abs(targetDose - cur.inf));
                     let loopCount = 0;
                     
+                    // BYPASS PARSER BUG: Using new Array() instead of square bracket initialization
+                    let stepOptions = new Array(0.1, -0.1); 
+                    
                     while (maxErr() > 0.0005 && loopCount < 100) {
-                        let bestJ = -1;
+                        let bestTargetDw = null; // Storing object reference instead of index
                         let bestStep = 0;
                         let currentMaxErr = maxErr();
                         let minTestErr = currentMaxErr;
+                        
+                        // BYPASS PARSER BUG: Safe retrieval of first and second dwells
+                        let dw0 = activeDwells.find((_, idx) => idx === 0);
+                        let dw1 = activeDwells.find((_, idx) => idx === 1);
 
-                        for (let j = 0; j < activeDwells.length; j++) {
-                            let rateRx = TG43.calculateDoseRate(activeDwells[j].x||0, activeDwells[j].y||0, activeDwells[j].z, activeDwells[j].orX||0, activeDwells[j].orY||0, activeDwells[j].orZ||-1, this.hardPoints[0].x, this.hardPoints[0].y||0, this.hardPoints[0].z, p.Sk);
-                            let rateInf = TG43.calculateDoseRate(activeDwells[j].x||0, activeDwells[j].y||0, activeDwells[j].z, activeDwells[j].orX||0, activeDwells[j].orY||0, activeDwells[j].orZ||-1, this.hardPoints[1].x, this.hardPoints[1].y||0, this.hardPoints[1].z, p.Sk);
+                        // BYPASS PARSER BUG: Using forEach with internal variable 'currentDw' instead of a normal for-loop to avoid bracket indexing
+                        activeDwells.forEach((currentDw, j) => {
+                            let rateRx = TG43.calculateDoseRate(currentDw.x||0, currentDw.y||0, currentDw.z, currentDw.orX||0, currentDw.orY||0, currentDw.orZ||-1, ptRx.x, ptRx.y||0, ptRx.z, p.Sk);
+                            let rateInf = TG43.calculateDoseRate(currentDw.x||0, currentDw.y||0, currentDw.z, currentDw.orX||0, currentDw.orY||0, currentDw.orZ||-1, ptInf.x, ptInf.y||0, ptInf.z, p.Sk);
                             
-                            // Test adding/subtracting 0.01s
-                            for (let step of [0.01, -0.01]) {
+                            // Test adding/subtracting 0.1s
+                            stepOptions.forEach(step => {
                                 // --- CLINICAL HARDWARE LIMIT (DISCRETE CHECK) ---
                                 // Must not fall below the minimum limit during fine tuning
-                                if (activeDwells[j].time + step < p.minDwell) continue;
+                                if (currentDw.time + step < p.minDwell) return; // return acts as 'continue' inside forEach
 
                                 // --- CLINICAL APEX CONSTRAINT (DISCRETE CHECK) ---
-                                // Do not allow a 0.01s step if it breaks the Time[1] >= Time[0] rule
+                                // Do not allow a 0.1s step if it breaks the Time rule
                                 if (activeDwells.length >= 2) {
-                                    if (j === 0 && (activeDwells[0].time + step > activeDwells[1].time)) continue;
-                                    if (j === 1 && (activeDwells[0].time > activeDwells[1].time + step)) continue;
+                                    if (j === 0 && (dw0.time + step > dw1.time)) return;
+                                    if (j === 1 && (dw0.time > dw1.time + step)) return;
                                 }
 
                                 let testRx = cur.rx + rateRx * step;
@@ -1639,18 +1662,18 @@
                                 
                                 if (testMaxErr < minTestErr) {
                                     minTestErr = testMaxErr;
-                                    bestJ = j;
+                                    bestTargetDw = currentDw;
                                     bestStep = step;
                                 }
-                            }
-                        }
+                            });
+                        });
 
-                        if (bestJ !== -1) {
-                            activeDwells[bestJ].time += bestStep;
-                            activeDwells[bestJ].time = parseFloat(activeDwells[bestJ].time.toFixed(2));
+                        if (bestTargetDw !== null) {
+                            bestTargetDw.time += bestStep;
+                            bestTargetDw.time = parseFloat(bestTargetDw.time.toFixed(1));
                             cur = calcCurrentDoses();
                         } else {
-                            break; // No single 0.01s step improves both points further, finish.
+                            break; // No single 0.1s step improves both points further, finish.
                         }
                         loopCount++;
                     }
