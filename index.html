@@ -11,6 +11,7 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-04-22]
+    - Integration: Added `parseUrlParameters()` to intercept and apply the 'diameter' parameter passed via URL query strings from external scripts like ESAPI.
     - Algorithm: Completely removed all legacy TPS 3D coordinate parsing, coordinate transformation functions, and related state variables (isTPSMode, setTab, importTPSEntry, etc.) to streamline the codebase as they are no longer used.
     - UI/UX: Removed TPS #1 and TPS #2 tabs from the sidebar to simplify the interface as requested.
     - Feature: Added a "Copy" button above the Dwells table that copies active dwell positions and times to the clipboard in a comma-separated format for easy Excel pasting.
@@ -596,6 +597,9 @@
                 this.initEventListeners();
                 this.resize();
                 
+                // Parse URL parameters (e.g., passed from ESAPI scripts) before building geometry
+                this.parseUrlParameters();
+                
                 // Setup defaults
                 const inputs = this.getInputs();
                 this.lastRxDose = inputs.rxDose;
@@ -633,6 +637,41 @@
                 if (callbackName && typeof this[callbackName] === 'function') {
                     this[callbackName](inputEl.value);
                 }
+            }
+
+            /**
+             * Parses URL query parameters to initialize application state.
+             * This allows external scripts (like Varian ESAPI) to launch this web app
+             * with pre-configured patient specific parameters.
+             */
+            parseUrlParameters() {
+                // Parse the query string from the URL (e.g., "?diameter=2.5")
+                const urlParams = new URLSearchParams(window.location.search);
+                const diameterParam = urlParams.get('diameter');
+                
+                if (diameterParam) {
+                    // Convert the parsed string parameter into a floating-point number
+                    const initialDiameter = parseFloat(diameterParam);
+                    
+                    if (!isNaN(initialDiameter)) {
+                        console.log("Configuration received from URL/ESAPI - Cylinder Diameter:", initialDiameter);
+                        
+                        // Update the internal state
+                        this.currentDiam = initialDiameter;
+                        
+                        // Update the UI buttons to reflect the received parameter
+                        document.querySelectorAll('.diam-btn').forEach(b => {
+                            b.classList.remove('active-diam');
+                            // Highlight the button if it exactly matches the imported diameter
+                            if (parseFloat(b.innerText) === initialDiameter) {
+                                b.classList.add('active-diam');
+                            }
+                        });
+                    }
+                }
+                
+                // Note: You can easily expand this method to parse other parameters 
+                // like txLength, rxDose, or stepSize in the future!
             }
 
             /**
