@@ -11,6 +11,8 @@
     CHANGE LOG & VERSION HISTORY
     =========================================================================================
     [2026-04-22]
+    - UI/UX: Restyled the "Copy" button with an Excel-inspired theme (green background, white text) to intuitively signify its export functionality. Also adjusted the "Copied!" feedback text to white for contrast.
+    - UI/UX: Increased the size of the "Copy" button above the Dwells table (larger icon, text, and padding) for better visibility and clickability.
     - Integration: Added `parseUrlParameters()` to intercept and apply the 'diameter' parameter passed via URL query strings from external scripts like ESAPI.
     - Algorithm: Completely removed all legacy TPS 3D coordinate parsing, coordinate transformation functions, and related state variables (isTPSMode, setTab, importTPSEntry, etc.) to streamline the codebase as they are no longer used.
     - UI/UX: Removed TPS #1 and TPS #2 tabs from the sidebar to simplify the interface as requested.
@@ -293,9 +295,9 @@
                     <div class="flex items-center justify-between mb-2">
                         <h2 class="text-[13px] font-bold text-slate-600 flex items-center gap-2">
                             <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div> Dwells
-                            <!-- Added Copy Button for Excel export -->
-                            <button onclick="app.copyDwellsToClipboard()" class="ml-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 px-2 py-0.5 rounded text-[10px] shadow-sm transition-all flex items-center gap-1 active:bg-slate-100" title="Copy Dwell Data">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            <!-- Added Copy Button for Excel export (Excel Theme: Green bg, White text) -->
+                            <button onclick="app.copyDwellsToClipboard()" class="ml-1.5 bg-green-600 border border-green-700 hover:bg-green-700 text-white px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm transition-all flex items-center gap-1.5 active:bg-green-800" title="Copy Dwell Data">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                 Copy
                             </button>
                         </h2>
@@ -1134,11 +1136,11 @@
                 try {
                     document.execCommand('copy');
                     
-                    // Visual feedback on the button
+                    // Visual feedback on the button (Updated to white text to contrast with new green bg)
                     const btn = document.querySelector('button[onclick="app.copyDwellsToClipboard()"]');
                     if (btn) {
                         const originalHTML = btn.innerHTML;
-                        btn.innerHTML = `<span class="text-green-600 font-bold">Copied!</span>`;
+                        btn.innerHTML = `<span class="text-white font-bold">Copied!</span>`;
                         setTimeout(() => btn.innerHTML = originalHTML, 1500);
                     }
                 } catch (err) {
